@@ -20,14 +20,22 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 
 Compiler code can look like a wall of unfamiliar words: token, syntax tree,
 resolver, type checker, intermediate representation, ABI. This guide introduces
-each word beside the TypeRB code that gives it meaning.
+each word beside the TypeRB responsibility that gives it meaning.
+
+Files and helper names will move. The guide therefore separates durable
+concepts, responsibility-based change journeys, versioned code maps, and
+executable evidence. Read [how to follow a changing codebase](foundations/reading-a-changing-codebase/)
+before trying to memorize a repository tree.
 
 <CardGrid>
 	<Card title="Learn the shared ideas" icon="open-book">
 		Build a small mental model of how source text becomes a running program.
 	</Card>
-	<Card title="See the two big maps" icon="map">
-		Understand why the reference compiler and Native compiler take different paths.
+	<Card title="Follow responsibilities" icon="right-arrow">
+		Trace inputs, guarantees, consumers, and evidence without depending on helper names.
+	</Card>
+	<Card title="Open a versioned map" icon="map">
+		Use pinned source links only when you need the current address of a responsibility.
 	</Card>
 	<Card title="Run one trace" icon="terminal">
 		Use a checked-in program and script to see real inputs, outputs, and checks.

@@ -13,8 +13,9 @@ change you want to make.
 - you want to work on the Go, Ruby, or TypeScript output; or
 - you want the clearest first tour through a complete compiler.
 
-Read the [reference compiler map](../reference-compiler/map/) and then run its
-[small trace](../reference-compiler/trace/).
+Read the [reference change journey](../reference-compiler/change-journey/) to
+understand its responsibilities. Use the [versioned map](../reference-compiler/map/)
+to find current code, and then run the [small trace](../reference-compiler/trace/).
 
 ## Start with the Native compiler when…
 
@@ -23,8 +24,9 @@ Read the [reference compiler map](../reference-compiler/map/) and then run its
 - you want to study Native MIR, QBE, ABI, or linker boundaries; or
 - you want to run a carefully bounded compiler experiment.
 
-Read the [Native compiler map](../native-compiler/map/) and then run its
-[small trace](../native-compiler/trace/).
+Read the [Native change journey](../native-compiler/change-journey/) to separate
+the application and bootstrap paths. Use the [versioned map](../native-compiler/map/)
+to find current code, and then run the [small trace](../native-compiler/trace/).
 
 ## The important difference
 
@@ -46,3 +48,7 @@ language behavior.
 Begin with [How a compiler works](../foundations/how-a-compiler-works/). It defines
 the six terms used most often in both maps. Ten minutes there will make the
 repository names much less mysterious.
+
+Then read [Read a changing codebase](../foundations/reading-a-changing-codebase/).
+It explains which parts of this guide are durable and which parts are pinned
+snapshots that move with an implementation.

@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
-    "check": "astro build && bun scripts/check-links.mjs",
+    "check": "astro build && bun scripts/check-durable-pages.mjs && bun scripts/check-links.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },

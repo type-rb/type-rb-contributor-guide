@@ -1,0 +1,159 @@
+---
+title: Native compiler — change journey
+description: Follow a Native change through language ownership, native boundaries, bootstrap, and evidence.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+TypeRB Native has two connected journeys:
+
+1. compile an application; and
+2. use a Native compiler to build the next Native compiler.
+
+The second journey amplifies mistakes in the first. This page keeps the
+responsibilities separate so that a change is not judged only by whether a
+bootstrap happens to converge.
+
+Use the [versioned big map](../map/) when you need current source addresses.
+
+## Classify the change first
+
+| Question | Owner | Evidence to ask for first |
+| --- | --- | --- |
+| What should TypeRB source mean? | The TypeRB language and reference conformance behavior | A settled portable case |
+| Does Native accept the case? | Native subset and exact compatibility claim | Valid and invalid differential cases |
+| How is checked meaning represented natively? | Native compiler internals | Deterministic checked form or QBE IL |
+| How are values laid out and executed? | Native MIR, runtime, ABI, and target profile | Boundary, runtime, and target tests |
+| Can the compiler reproduce itself? | Native bootstrap chain | Exact adjacent-generation evidence |
+| Is a result faster or smaller? | A registered measurement boundary | Correctness first, then comparable measurements |
+
+If the first row is unsettled, stop. Native is not a second place to define a
+different TypeRB language.
+
+The Native repository's
+[compatibility declaration](https://github.com/type-rb/type-rb-native/blob/main/compatibility/current.json)
+names the exact TypeRB identity backed by current evidence. Its
+[versioning guide](https://github.com/type-rb/type-rb-native/blob/main/docs/versioning.md)
+explains why Native implementation identity, language compatibility, internal
+protocols, runtime ABI, targets, and bootstrap evidence remain separate axes.
+
+## The application path
+
+<Steps>
+
+1. **Start from portable meaning**
+
+   Name the accepted TypeRB behavior and the exact Native compatibility claim.
+   Unsupported behavior must fail clearly instead of falling back to different
+   semantics.
+
+2. **Recognize and check the supported source**
+
+   The TypeRB-authored frontend lexes, parses, resolves, and checks the bounded
+   subset. Valid and invalid inputs should agree with the reference behavior
+   inside the claimed boundary.
+
+3. **Make native execution decisions explicit**
+
+   Checked operations cross into Native-owned representation. Layout, calling
+   convention, managed references, and runtime services belong here, not in the
+   portable source language.
+
+4. **Emit deterministic QBE IL**
+
+   QBE IL is a visible handoff. It should change when the intended native
+   representation changes and remain identical when an internal refactor does
+   not change that representation.
+
+5. **Cross the external tool boundary**
+
+   QBE, the assembler, linker, C toolchain boundary, platform ABI, and system
+   libraries are explicit dependencies. Record which side owns a failure.
+
+6. **Observe the program**
+
+   Exit status, standard output, diagnostics, artifacts, and cleanup are
+   stronger evidence than “the compiler process completed.”
+
+</Steps>
+
+## Bootstrap adds a feedback loop
+
+A normal application stops after it is built. A self-hosted compiler becomes
+the tool used by the next build:
+
+```text
+previous Native seed
+  -> builds the current TypeRB compiler source
+  -> candidate compiler
+  -> builds the same compiler source again
+  -> next candidate compiler
+```
+
+The exact generation names are less important than three questions:
+
+1. Did each candidate actually run as the compiler for the next generation?
+2. Was recovery tooling kept outside the ordinary Native-to-Native chain?
+3. Did the required compiler, QBE, and executable identities converge under
+   the declared policy?
+
+<Aside type="caution" title="A fixed point is necessary evidence, not complete correctness">
+  Two generations can reproduce the same wrong compiler. Keep conformance,
+  invalid-input diagnostics, representative application behavior, and runtime
+  boundaries beside fixed-point evidence.
+</Aside>
+
+## Evidence in the right order
+
+| Order | Evidence | What it rules out |
+| --- | --- | --- |
+| 1 | Portable valid and invalid cases | A Native-only dialect or silent fallback |
+| 2 | Deterministic diagnostics and QBE IL | Hidden nondeterminism and source-specific output |
+| 3 | Representative application output and failure behavior | A compiler artifact that does not preserve program behavior |
+| 4 | Adjacent Native-to-Native generations | A seed that cannot drive the next complete build |
+| 5 | Exact fixed point and target inspection | Drift across regeneration or target boundaries |
+| 6 | Registered time, memory, and size measurements | Performance claims made from incomparable or incorrect runs |
+
+Correctness evidence comes first because a fast fixed point that accepts the
+wrong language is not progress toward a Native TypeRB implementation.
+
+## Do not read gate numbers as compiler stages
+
+A gate records an experiment question and its acceptance evidence. It is
+history and rationale, not a stage traversed by every application.
+
+For ordinary compiler work:
+
+1. follow the application responsibilities above;
+2. identify the native boundary the change affects;
+3. use a gate or decision record to learn why that boundary exists; and
+4. rerun only the evidence that the boundary requires, plus its declared
+   regressions.
+
+This keeps historical directory names from becoming the reader's architecture.
+
+## Search by observable identities
+
+Useful search terms survive file moves better than helper names:
+
+```sh
+rg -n '<command or diagnostic fragment>' --glob '*.trb' --glob '*.sh'
+rg -n '<QBE symbol or emitted operation>' --glob '*.trb' --glob '*.ssa'
+rg -n '<manifest field or target profile>' --glob '*.json' --glob '*.md'
+```
+
+Trace one producer and one consumer. For a runtime or ABI change, also identify
+the source-level case that reaches it and the target evidence that observes it.
+
+## A practical reading order
+
+1. Run the [Native executable trace](../trace/).
+2. Use this page to separate the application path from the bootstrap path.
+3. Pick one emitted data item or function from the trace.
+4. Use the [big map](../map/) to find its producer in the pinned version.
+5. Read the nearest conformance case, then the decision or gate record that
+   explains the boundary.
+6. Read bootstrap machinery only if the change can alter compiler reproduction.
+
+This order lets the compiler remain an understandable program before it
+becomes an artifact that builds itself.

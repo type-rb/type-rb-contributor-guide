@@ -7,12 +7,12 @@ This repository is for **language implementers and contributors**. The main
 [TypeRB documentation](https://type-rb.github.io/docs/) remains the place for
 people who want to learn and use the language.
 
-The initial guide contains:
+The guide separates material by how quickly it changes:
 
-- shared compiler foundations;
-- a big map of `type-rb`;
-- a big map of `type-rb-native`; and
-- one executable trace for each compiler.
+- shared foundations explain durable compiler concepts;
+- change journeys follow responsibilities and evidence;
+- versioned big maps point to exact `type-rb` and `type-rb-native` source; and
+- executable traces keep one visible path through each compiler checked in CI.
 
 The published site is
 [type-rb.github.io/type-rb-contributor-guide](https://type-rb.github.io/type-rb-contributor-guide/).
