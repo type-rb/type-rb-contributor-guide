@@ -27,13 +27,20 @@ quietly redefine public behavior.
 
 ## Update a code map
 
-Code-map links are pinned to a full public repository revision. When an
-important path changes:
+Each code map names a human-readable implementation version and an exact public
+repository revision. The version helps readers understand the map's age. The
+revision keeps every source link reproducible, including while a `-dev` version
+spans several commits.
 
-1. update the revision note;
-2. check every pinned source link on that page;
-3. keep the conceptual description stable when only a filename moved; and
-4. run the matching executable trace.
+When an important path changes:
+
+1. read the version from the implementation repository's canonical version
+   declaration;
+2. update the displayed version and exact revision;
+3. link the version label to its declaration at that revision;
+4. check every pinned source link on that page;
+5. keep the conceptual description stable when only a filename moved; and
+6. run the matching executable trace.
 
 Do not turn a map into a complete package listing. It should answer where to
 start and which boundary to follow next.
