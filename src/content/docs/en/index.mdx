@@ -1,0 +1,47 @@
+---
+title: Understand the TypeRB compilers
+description: A gentle, code-guided path into the TypeRB reference and Native compilers.
+template: splash
+hero:
+  tagline: Start with one small program. Follow it through the compiler. Learn each idea when you need it.
+  actions:
+    - text: Start with the foundations
+      link: foundations/how-a-compiler-works/
+      icon: right-arrow
+    - text: Choose a compiler
+      link: paths/
+      icon: open-book
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## You do not need to know everything first
+
+Compiler code can look like a wall of unfamiliar words: token, syntax tree,
+resolver, type checker, intermediate representation, ABI. This guide introduces
+each word beside the TypeRB code that gives it meaning.
+
+<CardGrid>
+	<Card title="Learn the shared ideas" icon="open-book">
+		Build a small mental model of how source text becomes a running program.
+	</Card>
+	<Card title="See the two big maps" icon="map">
+		Understand why the reference compiler and Native compiler take different paths.
+	</Card>
+	<Card title="Run one trace" icon="terminal">
+		Use a checked-in program and script to see real inputs, outputs, and checks.
+	</Card>
+</CardGrid>
+
+## Two compilers, two paths
+
+The **reference compiler** is written in Go. It checks one portable TypeRB
+language and can generate Go, Ruby, or TypeScript.
+
+The **Native compiler** is an experimental compiler written in TypeRB. It
+checks a deliberately smaller language subset and produces native executables
+through Native MIR and QBE.
+
+Both paths begin with the same question: *what does this TypeRB program mean?*
+They answer the later question—*how should it run?*—in different ways.

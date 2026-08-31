@@ -1,0 +1,48 @@
+name: Compiler traces
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check out the mapped reference compiler
+        uses: actions/checkout@v6
+        with:
+          repository: type-rb/type-rb
+          ref: 8283239469d1bedd78d825ff34c2c2771e3fe902
+          path: reference-compiler
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: reference-compiler/go.mod
+          cache-dependency-path: reference-compiler/go.sum
+
+      - name: Build the reference compiler
+        working-directory: reference-compiler
+        run: go build -o "$RUNNER_TEMP/trb" ./cmd/trb
+
+      - name: Run the reference trace
+        env:
+          TYPE_RB_TRB: ${{ runner.temp }}/trb
+        run: ./scripts/trace-reference.sh
+
+  native:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run the Native trace
+        run: ./scripts/trace-native.sh

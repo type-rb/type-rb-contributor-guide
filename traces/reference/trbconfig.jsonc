@@ -1,0 +1,10 @@
+{
+  "name": "contributor-guide-reference-trace",
+  "mode": "go",
+  "sourceDir": ".",
+  "outDir": "build",
+  "go": {
+    "module": "example.com/type-rb/contributor-guide-reference-trace",
+    "rootPackage": "main"
+  }
+}

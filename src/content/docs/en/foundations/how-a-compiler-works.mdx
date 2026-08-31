@@ -1,0 +1,133 @@
+---
+title: How a compiler works
+description: A gentle introduction to the compiler ideas used in both TypeRB repositories.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Pipeline from '../../../../components/Pipeline.astro';
+
+A compiler is a program that reads a program. It answers two broad questions:
+
+1. **Does this source make sense?**
+2. **How should another machine or runtime execute it?**
+
+That is enough of a definition to begin reading TypeRB.
+
+## One tiny program
+
+Here is TypeRB source text:
+
+```text
+def main()
+	puts("hello")
+end
+```
+
+To us, it says “define the starting function and print a string.” A compiler
+has to build that meaning one small decision at a time.
+
+<Pipeline
+	label="A simple compiler pipeline"
+	stages={['Source text', 'Tokens', 'Syntax tree', 'Resolved and checked program', 'Intermediate form', 'Output code']}
+/>
+
+The names above are not six unrelated systems. They are six views of the same
+program.
+
+## 1. Lexer: find the pieces
+
+The **lexer** reads characters and groups them into **tokens**. Tokens are the
+small pieces of the language: `def`, `main`, `(`, `)`, a string, and `end`.
+
+Why keep this step? Later code can ask “is this token a function name?” instead
+of repeatedly asking “what do these four characters mean?”
+
+## 2. Parser: find the shape
+
+The **parser** turns the token sequence into a **syntax tree**, often shortened
+to AST (abstract syntax tree). The tree records that `main` is a function and
+that `puts("hello")` is a call inside its body.
+
+It is a tree because programs contain smaller programs: a function has a body,
+the body has a call, and the call has an argument.
+
+<Aside type="tip" title="Keep the source location">
+  Useful syntax nodes remember where they came from. That is how a later type
+  error can still point to the right line and column.
+</Aside>
+
+## 3. Resolver: connect names
+
+The **resolver** answers “which declaration does this name refer to?” It connects
+a call such as `greet()` to the correct function, and an imported name to the
+correct module.
+
+This is separate from parsing. A parser can recognize the shape of `greet()`
+without yet knowing whether `greet` exists.
+
+## 4. Type checker: test the meaning
+
+The **type checker** verifies relationships such as these:
+
+- a function receives the right number of arguments;
+- an `Integer` value is not used where a `String` is required; and
+- every return value agrees with the function's declared result.
+
+Resolver and checker failures become diagnostics. A good diagnostic explains
+what is wrong, where it happened, and—when possible—what the author can do.
+
+## 5. IR: make execution explicit
+
+An **intermediate representation**, or **IR**, is a compiler-friendly form of
+the checked program. It usually makes types, control flow, and operations more
+explicit than the original source.
+
+Why not generate output directly from the syntax tree? An IR gives several
+backends one shared, checked input. It is also a useful boundary for validation
+and optimization.
+
+The two TypeRB repositories have different IR responsibilities:
+
+- the reference compiler lowers to its portable typed IR before generating Go,
+  Ruby, or TypeScript;
+- TypeRB Native owns Native MIR and other internal checked models for native
+  layout, runtime, and QBE emission.
+
+## 6. Backend: choose how it runs
+
+The **backend** translates the checked intermediate form into a lower-level
+target.
+
+The reference compiler emits another high-level language. A Go toolchain, Ruby
+runtime, or JavaScript runtime then does the remaining work. The Native path
+emits QBE IL; QBE and the platform C toolchain turn that into machine code.
+
+## Frontend and backend
+
+Compiler developers often use one larger split:
+
+| Part | Main question | Typical stages |
+| --- | --- | --- |
+| Frontend | What does this TypeRB source mean? | lex, parse, resolve, check |
+| Middle | What explicit checked form should we work with? | lower, verify, optimize |
+| Backend | How should this target execute it? | emit, assemble, link |
+
+The boundary is helpful, but it is not a law of nature. Real repositories add
+project loading, package resolution, diagnostics, formatting, editor services,
+tests, runtimes, and command-line code around the central pipeline.
+
+## What to remember
+
+You can now read both maps with six questions:
+
+1. Where does source enter?
+2. Where are tokens and syntax trees made?
+3. Where are names resolved?
+4. Where are types checked?
+5. Which checked intermediate form crosses the next boundary?
+6. Which tool finally turns the output into something runnable?
+
+You do not need to memorize every type or directory. Use the
+[reference compiler map](../../reference-compiler/map/) or the
+[Native compiler map](../../native-compiler/map/) to answer those questions in
+one repository at a time.

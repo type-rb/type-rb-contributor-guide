@@ -1,0 +1,95 @@
+---
+title: Native compiler — executable trace
+description: Run an immutable Native seed through checking and QBE IL emission.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+This trace runs a real self-hosted Native compiler. It downloads the immutable
+experimental bootstrap seed for your platform, verifies its SHA-256 digest,
+checks a tiny TypeRB program, and emits QBE IL.
+
+## Supported platforms
+
+The published seed used by this trace supports:
+
+- macOS on arm64; and
+- Linux on arm64.
+
+The script stops with a plain explanation on other platforms. You can also set
+`TYPE_RB_NATIVE_COMPILER` to a compatible compiler executable you already have.
+
+## Run it
+
+From the contributor-guide repository:
+
+```sh
+./scripts/trace-native.sh
+```
+
+The first run needs `curl` and network access to download the seed.
+
+<Steps>
+
+1. **Select and verify the seed**
+
+   The script selects the platform asset from the immutable
+   `bootstrap-seed-2026-08-30` prerelease. It compares the file to the digest
+   recorded by that release.
+
+2. **Read the source**
+
+   The complete input is
+   [`traces/native/hello.trb`](https://github.com/type-rb/type-rb-contributor-guide/blob/main/traces/native/hello.trb).
+
+3. **Check with the Native frontend**
+
+   The seed runs its TypeRB-authored lexer, parser, resolver, and checker. A
+   successful check prints `ok`.
+
+4. **Emit QBE IL**
+
+   The same compiler emits a deterministic QBE program. The trace prints the
+   small data item for the greeting and the exported `main` entry.
+
+5. **Optionally build the executable**
+
+   If `qbe` and `cc` are on your `PATH`, the script asks the Native compiler to
+   build and run the executable. Without them, it stops cleanly at the documented
+   backend boundary.
+
+</Steps>
+
+Expected final program output when QBE is available:
+
+```text
+hello from TypeRB Native
+```
+
+## What just ran?
+
+```text
+hello.trb
+  -> downloaded Native seed
+  -> Native lexer, parser, resolver, and checker
+  -> Native QBE emitter
+  -> program.ssa
+  -> optional QBE + cc
+  -> optional native executable
+```
+
+This is deliberately different from the reference trace. It exposes the QBE
+boundary and the trust identity of the compiler seed.
+
+<Aside type="caution" title="The seed is experimental">
+  The date-labelled bootstrap seed is not a stable Native release or a promise
+  of compatibility. The script pins it so that the learning trace stays
+  reproducible.
+</Aside>
+
+## Make one safe experiment
+
+Change the greeting text and run the trace again. Find the changed UTF-8 bytes
+in QBE data. Then introduce an unsupported construct. The compiler should
+return a deterministic diagnostic rather than silently compile it with
+different language behavior.

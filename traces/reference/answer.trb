@@ -1,0 +1,8 @@
+def answer(): Integer
+	return 6 * 7
+end
+
+def main()
+	puts("answer=" + answer().to_s())
+	return
+end
