@@ -1,0 +1,226 @@
+---
+title: Reference code clinic — follow 6 × 7
+description: Read a few small Go excerpts that carry one TypeRB multiplication from parsing to generated Go.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Run the [reference executable trace](../trace/) first. This clinic follows its
+smallest interesting expression—`6 * 7`—through four implementation decisions.
+
+You are not trying to learn every surrounding type. At each stop, ask:
+
+1. What enters?
+2. What fact is added?
+3. Which next stage consumes it?
+
+<Aside type="note" title="Clinic snapshot">
+  This page reads
+  [TypeRB 0.4.3-dev](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/cli/cli.go#L53)
+  at revision
+  [`8283239`](https://github.com/type-rb/type-rb/commit/8283239469d1bedd78d825ff34c2c2771e3fe902).
+  The executable-trace CI builds that same revision. The short excerpts below
+  are a reading snapshot; the [big map](../map/) is the wider address index.
+</Aside>
+
+## Hold the three visible forms together
+
+<Tabs>
+  <TabItem label="TypeRB source">
+
+```trb {2}
+def answer(): Integer
+	return 6 * 7
+end
+```
+
+  </TabItem>
+  <TabItem label="Generated Go">
+
+```go {2}
+func Answer() int {
+	return trbIntegerMultiply_7a501f0387c1974d(6, 7)
+}
+```
+
+  </TabItem>
+  <TabItem label="Program output">
+
+```text
+answer=42
+```
+
+  </TabItem>
+</Tabs>
+
+The generated helper name contains an implementation-owned suffix. Do not
+search for that exact suffix in source. Follow the stable ideas instead:
+binary expression, checked `Integer` multiplication, and Go generation.
+
+## 1. Parsing records the authored operation
+
+The expression parser gives `*` a higher precedence than `+` and `-`:
+
+```go {4}
+var precedences = map[string]int{
+	// lower-precedence operators omitted
+	"+": 10, "-": 10,
+	"*": 11, "/": 11, "%": 11,
+	"**": highestBinaryPrecedence,
+}
+```
+
+Read the exact table in
+[`internal/parser/expression.go`](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/parser/expression.go#L35-L48).
+After parsing the right operand, the same function preserves the operator and
+both operands in an `ast.BinaryExpression`:
+
+```go {5}
+prec, ok := precedences[tok.Lexeme]
+// stop or recursively parse the right operand
+if tok.Lexeme == ".." || tok.Lexeme == "..." {
+	// build a range
+} else {
+	left = &ast.BinaryExpression{Left: left, Operator: tok.Lexeme, Right: right}
+}
+```
+
+The [complete branch](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/parser/expression.go#L135-L152)
+also carries the combined source span. The parser has answered “what was
+written?” It has not yet proved that multiplication is valid for these values.
+
+**Small Go note:** `map[string]int` maps operator spellings to integer
+precedence. `left = &ast.BinaryExpression{...}` creates a syntax node and keeps
+a pointer to it. You do not need deeper Go knowledge to follow this handoff.
+
+## 2. Checking gives the operation a type
+
+The checker recognizes the syntax node in a Go type switch, recursively checks
+both operands, and delegates the operator rule:
+
+```go {1,4}
+case *ast.BinaryExpression:
+	left := c.checkExpression(n.Left, sc)
+	right := c.checkExpression(n.Right, sc)
+	typ = c.checkBinaryOperator(n.Span(), n.Operator, left, right)
+```
+
+Open the
+[`BinaryExpression` checker branch](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/checker/checker.go#L6343-L6361)
+to see value checks and numeric conversions around those essential lines.
+
+The operator rule says that `-`, `*`, `/`, and `**` accept two non-nullable
+numbers and return their common numeric type:
+
+```go {1-3}
+case "-", "*", "/", "**":
+	if isNonNullableNumber(left) && isNonNullableNumber(right) {
+		return commonNumberType(left, right)
+	}
+```
+
+That rule is part of
+[`checkBinaryOperator`](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/checker/checker.go#L4544-L4585).
+For `6 * 7`, both operands and the result are `Integer`.
+
+**Small Go note:** `case *ast.BinaryExpression` asks whether an interface value
+contains that concrete syntax-node type. It is a dispatch point, not an extra
+compiler phase.
+
+## 3. Lowering carries checked meaning into IR
+
+Lowering converts the syntax node to the backend-neutral typed IR:
+
+```go {1-2}
+case *ast.BinaryExpression:
+	return &ir.Binary{ExprBase: base, Left: l.expression(n.Left), Operator: n.Operator, Right: l.expression(n.Right)}
+```
+
+The exact lowering is only
+[`two lines`](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/lower/lower.go#L1008-L1009).
+The resulting
+[`ir.Binary`](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/ir/ir.go#L664-L671)
+keeps the typed base, left operand, operator, and right operand.
+
+This short handoff matters. Go, Ruby, and TypeScript generators can consume one
+checked operation instead of rediscovering whether `*` was legal.
+
+## 4. The Go generator preserves portable Integer behavior
+
+The Go generator sees an `ir.Binary`. When its checked result type is `Integer`
+and the operator needs range checking, it chooses a runtime helper:
+
+```go {2-3}
+if n.ExprType().Kind == types.Int && isCheckedIntegerOperator(op) {
+	return g.checkedIntegerBinary(op, left, right)
+}
+```
+
+Read the surrounding
+[`ir.Binary` generator branch](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/codegen/golang/go.go#L1668-L1689).
+The helper selector maps `*` to `Multiply` and marks the checked-Integer runtime
+as required:
+
+```go {2,4}
+g.checkedInteger = true
+name := map[string]string{
+	"+": "Add", "-": "Subtract", "*": "Multiply",
+}[operator]
+return g.checkedIntegerRuntimeName(name) + "(" + left + ", " + right + ")"
+```
+
+The
+[`checkedIntegerBinary` implementation](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/codegen/golang/go.go#L1975-L1980)
+is small because runtime support owns the overflow checks. That is why the
+generated result is a helper call rather than plain `6 * 7`: portable TypeRB
+`Integer` behavior must not depend on a target's unchecked overflow behavior.
+
+## The complete responsibility chain
+
+| Boundary | Added fact | Next consumer |
+| --- | --- | --- |
+| Parser | `6`, `*`, and `7` form one binary syntax node with a span | Resolver and checker |
+| Checker | both operands and the result are valid `Integer` values | Lowering |
+| Lowering | one typed, backend-neutral binary operation | All target generators |
+| Go generator | multiplication uses portable checked-Integer support | Go toolchain and runtime |
+| Program | the operation contributes `42` to visible output | User and runtime tests |
+
+## Run focused evidence
+
+From the matching `type-rb` checkout:
+
+```sh
+go test ./internal/parser
+go test ./internal/compiler
+go test ./internal/cli -run '^TestRunPortableIntegerAndIEEEFloatArithmeticAcrossBackends$'
+```
+
+The first command protects source shape. The second crosses checking, IR, and
+generation boundaries. The named CLI test exercises portable arithmetic across
+available backends. Choose only the earliest relevant command while editing,
+then expand verification before review.
+
+## Check yourself
+
+1. Which stage first decides that `*` is legal for two `Integer` operands?
+2. Why should the Go generator consume `ir.Binary` instead of the parser node?
+3. Why is a checked multiplication helper visible even for the small values
+   `6` and `7`?
+
+<details>
+  <summary>Check your answers</summary>
+
+1. The checker. The parser records the authored operator but does not approve
+   its operand types.
+2. Typed IR carries the already-checked portable meaning and keeps target
+   generators from reimplementing source-language rules.
+3. The generator applies one portable `Integer` strategy consistently. The
+   helper also protects other runtime values that may exceed the portable
+   range.
+
+</details>
+
+Continue with the [workflow and test matrix](../../contributor-workflow/) when
+you are ready to choose evidence for a change. Use the
+[change journey](../change-journey/) to decide how far that change must travel,
+and the [big map](../map/) only when you need more source addresses.

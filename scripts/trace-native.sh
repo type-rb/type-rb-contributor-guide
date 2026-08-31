@@ -4,7 +4,9 @@ set -eu
 guide_root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 source_file="$guide_root/traces/native/hello.trb"
 workspace=$(mktemp -d "${TMPDIR:-/tmp}/typerb-native-trace.XXXXXX")
-release_url=https://github.com/type-rb/type-rb-native/releases/download/bootstrap-seed-2026-08-30
+release_tag=bootstrap-seed-2026-08-30
+release_source_revision=0058818314977633c50393796ef9b9f8f1fda50f
+release_url="https://github.com/type-rb/type-rb-native/releases/download/$release_tag"
 
 cleanup() {
 	rm -rf -- "$workspace"
@@ -53,6 +55,7 @@ else
 	fi
 	chmod 0755 "$compiler"
 	printf 'verified %s\n' "$actual_digest"
+	printf 'seed source revision %s\n' "$release_source_revision"
 fi
 
 if [ ! -x "$compiler" ]; then

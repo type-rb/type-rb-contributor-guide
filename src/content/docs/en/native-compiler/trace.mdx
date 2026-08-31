@@ -9,6 +9,25 @@ This trace runs a real self-hosted Native compiler. It downloads the immutable
 experimental bootstrap seed for your platform, verifies its SHA-256 digest,
 checks a tiny TypeRB program, and emits QBE IL.
 
+## Which source does this executable contain?
+
+| Identity | Value | How to use it |
+| --- | --- | --- |
+| Default executed artifact | [`bootstrap-seed-2026-08-30`](https://github.com/type-rb/type-rb-native/releases/tag/bootstrap-seed-2026-08-30) | Reproducible compiler binary downloaded by the script |
+| Seed source revision | [`0058818`](https://github.com/type-rb/type-rb-native/commit/0058818314977633c50393796ef9b9f8f1fda50f) | Exact source that explains this trace's emitted symbols and lines |
+| Code-clinic source | the same `0058818314977633c50393796ef9b9f8f1fda50f` revision | Short, line-linked reading path for this output |
+| Big-map revision | Native `0.1.0-dev` at [`ae9b9d6`](https://github.com/type-rb/type-rb-native/commit/ae9b9d6dffa963413369285f7812286ada707df2) | A newer architecture and source-address snapshot |
+
+The seed revision is an ancestor of the map revision; the map is 69 commits
+later. Both use the `compiler/gate4` application path, but they are not the same
+source. Follow trace output in the [Native code clinic](../code-clinic/). Use
+the [big map](../map/) to navigate the newer implementation.
+
+Setting `TYPE_RB_NATIVE_COMPILER` bypasses the seed download and digest check.
+The script labels that compiler as supplied, and the clinic may no longer match
+its output. Record the supplied compiler's source identity when using the
+override as evidence.
+
 ## Supported platforms
 
 The published seed used by this trace supports:

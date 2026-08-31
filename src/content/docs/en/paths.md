@@ -13,9 +13,17 @@ change you want to make.
 - you want to work on the Go, Ruby, or TypeScript output; or
 - you want the clearest first tour through a complete compiler.
 
-Read the [reference change journey](../reference-compiler/change-journey/) to
-understand its responsibilities. Use the [versioned map](../reference-compiler/map/)
-to find current code, and then run the [small trace](../reference-compiler/trace/).
+Follow one route in this order:
+
+1. Run the [small reference trace](../reference-compiler/trace/).
+2. Follow the same `6 * 7` expression in the
+   [reference code clinic](../reference-compiler/code-clinic/).
+3. Choose a focused check from the
+   [workflow and test matrix](../contributor-workflow/).
+4. Use the [reference change journey](../reference-compiler/change-journey/)
+   to decide which responsibilities your change crosses.
+5. Keep the [versioned map](../reference-compiler/map/) open as a source-address
+   reference while you work.
 
 ## Start with the Native compiler when…
 
@@ -24,9 +32,17 @@ to find current code, and then run the [small trace](../reference-compiler/trace
 - you want to study Native MIR, QBE, ABI, or linker boundaries; or
 - you want to run a carefully bounded compiler experiment.
 
-Read the [Native change journey](../native-compiler/change-journey/) to separate
-the application and bootstrap paths. Use the [versioned map](../native-compiler/map/)
-to find current code, and then run the [small trace](../native-compiler/trace/).
+Follow the matching Native route:
+
+1. Run the [small Native trace](../native-compiler/trace/).
+2. Follow its String and `puts` call in the
+   [Native code clinic](../native-compiler/code-clinic/).
+3. Choose a focused check from the
+   [workflow and test matrix](../contributor-workflow/).
+4. Use the [Native change journey](../native-compiler/change-journey/) to
+   separate application, runtime, and bootstrap obligations.
+5. Keep the [versioned map](../native-compiler/map/) open as a source-address
+   reference while you work.
 
 ## The important difference
 
@@ -57,3 +73,6 @@ Keep the [contributor glossary](../glossary/) open while unfamiliar terms are
 still frequent. Before implementing a change, use
 [Test a compiler change](../foundations/testing-compiler-changes/) to choose
 evidence at the responsibility boundary instead of at a private helper.
+
+When you are ready to work in a checkout, continue with
+[Make your first compiler change](../start-contributing/).

@@ -1,0 +1,165 @@
+---
+title: Set up and make your first compiler change
+description: Complete one path from a clean checkout to focused evidence and a reviewable pull request.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+This tutorial takes you through one complete contributor loop. You will begin
+with a passing checkout, observe one real compiler path, make a focused change,
+and finish with evidence another contributor can review.
+
+You do not need to understand the whole compiler first. You need one small
+claim, the boundary that owns it, and a test that makes success visible.
+
+## Choose one checkout
+
+Start with only one implementation:
+
+- Choose [`type-rb`](https://github.com/type-rb/type-rb) for portable syntax,
+  type checking, diagnostics, tooling, or Go, Ruby, and TypeScript generation.
+- Choose [`type-rb-native`](https://github.com/type-rb/type-rb-native) for the
+  experimental self-hosted frontend, QBE emission, runtime, ABI, or bootstrap
+  evidence.
+
+The reference compiler is the gentler first contribution. Native adds explicit
+toolchain and bootstrap obligations.
+
+## Prepare a passing baseline
+
+For the reference compiler, install the Go version declared by `go.mod`, then
+run the repository's canonical baseline:
+
+```sh
+go test ./...
+go vet ./...
+go build -o /tmp/trb ./cmd/trb
+```
+
+The current commands and architecture notes live in the reference repository's
+[`docs/development.md`](https://github.com/type-rb/type-rb/blob/main/docs/development.md).
+
+For Native, first build or install the exact reference `trb` revision named by
+the Native checkout's `TYPE_RB_REVISION`. Then run the smallest compiler-source
+baseline:
+
+```sh
+trb check --config compiler/gate4/trbconfig.jsonc
+TYPE_RB_NATIVE_ROOT="$PWD" trb test --config compiler/gate4/trbconfig.jsonc
+```
+
+Native's [`CONTRIBUTING.md`](https://github.com/type-rb/type-rb-native/blob/main/CONTRIBUTING.md)
+owns the complete current command set. QBE and a C toolchain are needed only
+when the boundary you are testing reaches native code generation or linking.
+
+<Aside type="caution" title="Do not debug a new change on top of a failing baseline">
+  Record the failing command and determine whether the checkout, tool identity,
+  platform, or existing code owns it. A pre-existing failure cannot prove or
+  disprove your change.
+</Aside>
+
+## Complete the contributor loop
+
+<Steps>
+
+1. **Create a focused branch**
+
+   Begin from the repository's current default branch. Give the branch one
+   outcome, not the name of an entire subsystem.
+
+2. **Run the matching executable trace**
+
+   In a contributor-guide checkout, run one of:
+
+   ```sh
+   TYPE_RB_TRB=/tmp/trb ./scripts/trace-reference.sh
+   ./scripts/trace-native.sh
+   ```
+
+   Stop at each printed boundary. Name its input and visible output before
+   reading implementation code.
+
+3. **Read the same input in a code clinic**
+
+   Use [Follow `6 * 7`](reference-compiler/code-clinic/) or
+   [Follow a String to QBE](native-compiler/code-clinic/). The clinic is short
+   on purpose: it teaches how to cross boundaries without reading a whole
+   package or a multi-thousand-line compiler file.
+
+4. **Write one source-level claim**
+
+   Use this shape:
+
+   > Given this small source input, this owning boundary must produce this
+   > result or diagnostic, and these named consumers must preserve it.
+
+   If the behavior is not settled, pause implementation and resolve the
+   language or architecture question first.
+
+5. **Add or change the narrowest useful test**
+
+   Prefer a public phase boundary: parsed shape, checker diagnostic, typed IR,
+   generated target source, conformance result, or program output. Add a nearby
+   valid–invalid pair when the change introduces a rule.
+
+6. **See the test fail for the intended reason**
+
+   Read the failure, do not merely count it. A useful red test reaches the
+   intended owner and reports the missing behavior. A crash in setup, an
+   unrelated diagnostic, or a missing tool is not the expected failure.
+
+7. **Make the smallest owner-correct implementation**
+
+   Follow the [reference change journey](reference-compiler/change-journey/)
+   or [Native change journey](native-compiler/change-journey/). Do not repair a
+   portable semantic rule only in one backend, and do not widen Native's
+   accepted language as a side effect of a backend experiment.
+
+8. **Climb the evidence ladder**
+
+   Run the focused test first. Then test the shared handoff, affected consumers,
+   representative runtime behavior, and finally the repository-wide checks.
+   The [workflow and test matrix](contributor-workflow/) lists the stable entry
+   commands for each repository.
+
+9. **Read the complete diff as a reviewer**
+
+   Use `git diff --check`, `git diff --stat`, and `git diff`. Confirm that every
+   changed file belongs to the claim, fixtures remain small, generated output
+   is not mistaken for language ownership, and no local path or temporary
+   artifact is present.
+
+10. **Open a focused pull request**
+
+    State the source-level behavior, the owning boundary, the focused evidence,
+    the broad checks run, and any intentionally untested tool or platform
+    boundary. A reviewer should not have to reconstruct the claim from the
+    implementation diff.
+
+</Steps>
+
+## Practice the red–green loop safely
+
+If you do not yet have a real change, rehearse without keeping a fake
+contribution:
+
+1. run one focused test from the matching code clinic;
+2. change one expected value in that test to an obviously wrong value;
+3. rerun only that test and explain the failure;
+4. edit the expectation back and confirm the test passes; and
+5. check the diff to ensure the rehearsal left no change.
+
+This exercise teaches command selection and failure reading. It is not a pull
+request by itself.
+
+## You are ready when…
+
+- you can explain which responsibility changed and which did not;
+- the focused test fails before the implementation and passes after it;
+- every affected downstream consumer has proportionate evidence;
+- broad checks pass, or an unavailable external boundary is stated precisely;
+- the diff contains one reviewable outcome; and
+- the pull request describes behavior before code structure.
+
+That is a complete first compiler change. The big maps remain useful during the
+work, but memorizing them is not a prerequisite.

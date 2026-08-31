@@ -10,9 +10,11 @@ TypeRB Native is an evidence-driven experiment. Its goal is not merely “emit
 machine code.” It explores whether a TypeRB-authored compiler and runtime can
 build useful native programs and reproduce the compiler itself.
 
-Read the [change journey](../change-journey/) when you want responsibility and
-evidence that survive file moves. Use this page when you need exact source
-addresses for the version below.
+Start with the [executable trace](../trace/) and
+[short code clinic](../code-clinic/). Read the
+[change journey](../change-journey/) when you want responsibility and evidence
+that survive file moves. Use this page when you need exact source addresses for
+the newer version below.
 
 <Aside type="caution" title="Experimental, not a supported target">
   The Native compiler accepts a deliberately bounded TypeRB subset. Unsupported
@@ -137,12 +139,15 @@ inside the Native repository.
 ## A useful reading order
 
 1. Run the [Native executable trace](../trace/).
-2. Search `compiler.trb` for `compiler_file_main` and follow the selected mode.
-3. Follow one tiny construct through `gate4_lex`, `gate4_parse_*`,
+2. Complete the [String-to-QBE code clinic](../code-clinic/), which reads the
+   exact older seed source used by that trace.
+3. In this newer snapshot, search `compiler.trb` for `compiler_file_main` and
+   follow the selected mode.
+4. Follow one tiny construct through `gate4_lex`, `gate4_parse_*`,
    `gate4_resolve`, and `gate4_check`.
-4. Find the same construct in `gate4_emit_*`.
-5. Read one conformance case and the gate document that explains its boundary.
-6. Read the bootstrap map only when the ordinary compile path is clear.
+5. Find the same construct in `gate4_emit_*`.
+6. Read one conformance case and the gate document that explains its boundary.
+7. Read the bootstrap map only when the ordinary compile path is clear.
 
 This order separates “how one program is compiled” from “how the compiler is
 reproduced.” Both matter, but they answer different questions.

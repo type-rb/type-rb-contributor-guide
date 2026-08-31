@@ -19,15 +19,19 @@ The questions a compiler must answer usually change more slowly:
 Use those questions as landmarks. Treat filenames as directions for one known
 version, not as the architecture itself.
 
-## Three layers of knowledge
+## Layers of knowledge
 
-This guide separates information by how quickly it is expected to change.
+This guide separates information by purpose and by how quickly it is expected
+to change.
 
 | Layer | What it explains | When it should change |
 | --- | --- | --- |
+| **Guided path** | A successful setup, reading, testing, and review sequence | When the contributor task or canonical commands change |
 | **Concept** | Compiler ideas and language ownership | When the language or an architectural decision changes |
 | **Boundary** | A responsibility's input, output, guarantee, and evidence | When responsibility moves between parts of the compiler |
-| **Snapshot** | Current files, symbols, commands, and source links | Whenever the mapped implementation moves |
+| **Reading snapshot** | A few exact implementation decisions for one trace input | When the trace identity or explained code path changes |
+| **Address snapshot** | Current files, symbols, and source links | Whenever the mapped implementation moves |
+| **Executable evidence** | One small visible compiler path | When its fixture, tool identity, or expected boundary changes |
 
 <CardGrid>
 	<Card title="Foundations are concepts" icon="open-book">
@@ -37,6 +41,10 @@ This guide separates information by how quickly it is expected to change.
 	<Card title="Change journeys follow boundaries" icon="right-arrow">
 		They follow responsibility from an input to a checked output and name the
 		evidence expected at each handoff.
+	</Card>
+	<Card title="Code clinics are reading snapshots" icon="right-arrow">
+		They pin short excerpts to the exact source that produced one trace. Use
+		them to learn how to cross code boundaries, not as permanent architecture.
 	</Card>
 	<Card title="Big maps are snapshots" icon="map">
 		They link to exact source revisions. Use them to find today's starting point,
@@ -130,9 +138,11 @@ rewrite the conceptual explanation.
 
 4. **Open the pinned map only when you need an address**
 
-   The [reference map](../../reference-compiler/map/) and
-   [Native map](../../native-compiler/map/) provide exact source locations for
-   their named versions.
+   First use the [reference code clinic](../../reference-compiler/code-clinic/)
+   or [Native code clinic](../../native-compiler/code-clinic/) to learn the
+   reading method on one small input. The [reference map](../../reference-compiler/map/)
+   and [Native map](../../native-compiler/map/) then provide more exact source
+   locations for their named versions.
 
 5. **Run the smallest visible proof**
 

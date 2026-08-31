@@ -152,12 +152,16 @@ the source-level case that reaches it and the target evidence that observes it.
 ## A practical reading order
 
 1. Run the [Native executable trace](../trace/).
-2. Use this page to separate the application path from the bootstrap path.
-3. Pick one emitted data item or function from the trace.
-4. Use the [big map](../map/) to find its producer in the pinned version.
-5. Read the nearest conformance case, then the decision or gate record that
+2. Follow its String and `puts` call in the
+   [Native code clinic](../code-clinic/).
+3. Run the nearest check from the
+   [workflow and test matrix](../../contributor-workflow/).
+4. Use this page to separate the application path from the bootstrap path.
+5. Use the [big map](../map/) to find the corresponding producer in the newer
+   pinned version.
+6. Read the nearest conformance case, then the decision or gate record that
    explains the boundary.
-6. Read bootstrap machinery only if the change can alter compiler reproduction.
+7. Read bootstrap machinery only if the change can alter compiler reproduction.
 
 This order lets the compiler remain an understandable program before it
 becomes an artifact that builds itself.

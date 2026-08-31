@@ -10,8 +10,10 @@ The reference compiler is the best place to begin when a change affects the
 portable TypeRB language. It owns the complete path from source text to checked
 Go, Ruby, or TypeScript output.
 
-Read the [change journey](../change-journey/) when you want responsibility and
-evidence that survive file moves. Use this page when you need exact source
+Start with the [executable trace](../trace/) and
+[short code clinic](../code-clinic/). Read the
+[change journey](../change-journey/) when you want responsibility and evidence
+that survive file moves. Use this page only when you need more exact source
 addresses for the version below.
 
 <Aside type="note" title="Map version">
@@ -95,11 +97,11 @@ or project analysis.
 
 For a first code-reading session:
 
-1. Read only `compileSourceUnit` in `internal/compiler/compiler.go`.
-2. Run the [reference compiler trace](../trace/).
-3. Open the parser node for one construct in the trace program.
-4. Find the checker rule for the same construct.
-5. Find its IR node and one target generator.
+1. Run the [reference compiler trace](../trace/).
+2. Complete the [`6 * 7` code clinic](../code-clinic/).
+3. Read only `compileSourceUnit` in `internal/compiler/compiler.go`.
+4. Use this map to open one neighboring construct relevant to your change.
+5. Find its checker rule, IR node, and one affected target generator.
 
 This follows one idea across boundaries. It is easier than reading one whole
 directory before you know what consumes it.

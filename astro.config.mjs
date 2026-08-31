@@ -9,6 +9,14 @@ export default defineConfig({
 		starlight({
 			title: 'TypeRB Contributor Guide',
 			description: 'A gentle guide to understanding and contributing to the TypeRB compilers.',
+			expressiveCode: {
+				shiki: {
+					langAlias: {
+						trb: 'ruby',
+						qbe: 'asm',
+					},
+				},
+			},
 			head: [
 				{
 					tag: 'meta',
@@ -51,6 +59,8 @@ export default defineConfig({
 					items: [
 						{ label: 'Welcome', link: '/' },
 						{ label: 'Choose a path', link: '/paths/' },
+						{ label: 'Make your first change', link: '/start-contributing/' },
+						{ label: 'Workflow and test matrix', link: '/contributor-workflow/' },
 						{ label: 'Contributor glossary', link: '/glossary/' },
 					],
 				},
@@ -63,21 +73,28 @@ export default defineConfig({
 					],
 				},
 				{
+					label: 'Guided labs',
+					items: [
+						{ label: 'Reference trace', link: '/reference-compiler/trace/' },
+						{ label: 'Follow 6 × 7', link: '/reference-compiler/code-clinic/' },
+						{ label: 'Native trace', link: '/native-compiler/trace/' },
+						{ label: 'Follow a String to QBE', link: '/native-compiler/code-clinic/' },
+					],
+				},
+				{
 					label: 'Reference compiler',
 					items: [
-						{ label: 'Big map', link: '/reference-compiler/map/' },
 						{ label: 'Change journey', link: '/reference-compiler/change-journey/' },
 						{ label: 'Follow a diagnostic', link: '/reference-compiler/diagnostics/' },
-						{ label: 'Executable trace', link: '/reference-compiler/trace/' },
+						{ label: 'Big map', link: '/reference-compiler/map/' },
 					],
 				},
 				{
 					label: 'Native compiler',
 					items: [
-						{ label: 'Big map', link: '/native-compiler/map/' },
 						{ label: 'Change journey', link: '/native-compiler/change-journey/' },
 						{ label: 'Read the evidence', link: '/native-compiler/evidence/' },
-						{ label: 'Executable trace', link: '/native-compiler/trace/' },
+						{ label: 'Big map', link: '/native-compiler/map/' },
 					],
 				},
 			],

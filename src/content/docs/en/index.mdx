@@ -5,8 +5,8 @@ template: splash
 hero:
   tagline: Start with one small program. Follow it through the compiler. Learn each idea when you need it.
   actions:
-    - text: Start with the foundations
-      link: foundations/how-a-compiler-works/
+    - text: Make your first change
+      link: start-contributing/
       icon: right-arrow
     - text: Choose a compiler
       link: paths/
@@ -23,22 +23,23 @@ resolver, type checker, intermediate representation, ABI. This guide introduces
 each word beside the TypeRB responsibility that gives it meaning.
 
 Files and helper names will move. The guide therefore separates durable
-concepts, responsibility-based change journeys, versioned code maps, and
-executable evidence. Read [how to follow a changing codebase](foundations/reading-a-changing-codebase/)
+concepts, responsibility-based change journeys, short versioned code clinics,
+versioned code maps, and executable evidence. Read
+[how to follow a changing codebase](foundations/reading-a-changing-codebase/)
 before trying to memorize a repository tree.
 
 <CardGrid>
 	<Card title="Learn the shared ideas" icon="open-book">
 		Build a small mental model of how source text becomes a running program.
 	</Card>
-	<Card title="Follow responsibilities" icon="right-arrow">
-		Trace inputs, guarantees, consumers, and evidence without depending on helper names.
-	</Card>
-	<Card title="Open a versioned map" icon="map">
-		Use pinned source links only when you need the current address of a responsibility.
-	</Card>
 	<Card title="Run one trace" icon="terminal">
-		Use a checked-in program and script to see real inputs, outputs, and checks.
+		See a real source file, compiler boundary, generated artifact, and result.
+	</Card>
+	<Card title="Read a short code clinic" icon="right-arrow">
+		Follow the same input through a few highlighted implementation decisions.
+	</Card>
+	<Card title="Use the map as reference" icon="map">
+		Open pinned source links only when you need a responsibility's current address.
 	</Card>
 </CardGrid>
 
@@ -56,6 +57,10 @@ They answer the later question—*how should it run?*—in different ways.
 
 ## Keep a place to return to
 
+- Use [Make your first compiler change](start-contributing/) for the complete
+  route from setup to a reviewable pull request.
+- Use the [workflow and test matrix](contributor-workflow/) to choose a fast
+  focused check and the broader checks required before review.
 - Use the [contributor glossary](glossary/) when two compiler or evidence terms
   sound almost alike.
 - Use [Test a compiler change](foundations/testing-compiler-changes/) before

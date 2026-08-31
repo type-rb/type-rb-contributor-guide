@@ -139,11 +139,13 @@ The goal is to identify the handoff, not to memorize the package tree.
 ## A practical reading order
 
 1. Run the [reference executable trace](../trace/).
-2. Pick one visible source expression from the fixture.
-3. Use this journey to name the responsibilities it should cross.
-4. Use the [big map](../map/) to find those responsibilities in the pinned
-   version.
-5. Read one focused test at each boundary before reading its implementation.
+2. Follow its multiplication in the [reference code clinic](../code-clinic/).
+3. Run the nearest check from the
+   [workflow and test matrix](../../contributor-workflow/).
+4. Use this journey to name the responsibilities your change should cross.
+5. Use the [big map](../map/) only to find more addresses in the pinned version.
+6. Read one focused test at each affected boundary before reading farther into
+   its implementation.
 
 When you can explain why one piece of information is present at each handoff,
 you know enough to begin a focused change.
