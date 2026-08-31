@@ -1,0 +1,157 @@
+---
+title: Read a changing codebase
+description: Learn a way to follow compiler responsibilities even when files and helper names move.
+---
+
+import { Aside, Card, CardGrid, Steps } from '@astrojs/starlight/components';
+
+Compiler code changes quickly. A file can move. A helper can be split into
+three helpers. An internal data structure can be replaced.
+
+The questions a compiler must answer usually change more slowly:
+
+- What source shape did the author write?
+- Which declaration does a name refer to?
+- Is the program well typed?
+- What checked meaning crosses into code generation?
+- What proves that the result is still correct?
+
+Use those questions as landmarks. Treat filenames as directions for one known
+version, not as the architecture itself.
+
+## Three layers of knowledge
+
+This guide separates information by how quickly it is expected to change.
+
+| Layer | What it explains | When it should change |
+| --- | --- | --- |
+| **Concept** | Compiler ideas and language ownership | When the language or an architectural decision changes |
+| **Boundary** | A responsibility's input, output, guarantee, and evidence | When responsibility moves between parts of the compiler |
+| **Snapshot** | Current files, symbols, commands, and source links | Whenever the mapped implementation moves |
+
+<CardGrid>
+	<Card title="Foundations are concepts" icon="open-book">
+		Pages such as [How a compiler works](../how-a-compiler-works/) explain ideas
+		without depending on one repository layout.
+	</Card>
+	<Card title="Change journeys follow boundaries" icon="right-arrow">
+		They follow responsibility from an input to a checked output and name the
+		evidence expected at each handoff.
+	</Card>
+	<Card title="Big maps are snapshots" icon="map">
+		They link to exact source revisions. Use them to find today's starting point,
+		not as a promise that a directory will keep its name.
+	</Card>
+	<Card title="Traces are executable evidence" icon="terminal">
+		They exercise small, user-visible paths in CI so that a prose explanation is
+		not the only proof.
+	</Card>
+</CardGrid>
+
+## Ask four questions at every boundary
+
+When you find an unfamiliar stage, do not begin by reading every type in it.
+Answer four smaller questions.
+
+1. **What enters?** Source text, tokens, a syntax node, checked types, an
+   intermediate program, or target code?
+2. **What must be true when it leaves?** Names resolved, types known, control
+   flow explicit, layout fixed, or diagnostics complete?
+3. **Who consumes the result?** The checker, a lowering step, every backend,
+   one target toolchain, or an editor service?
+4. **What proves the handoff?** A diagnostic test, an IR assertion, generated
+   source, program output, a fixed point, or compatibility evidence?
+
+These answers describe a contract. Private helpers can change without changing
+that contract.
+
+## Follow data forward and failures backward
+
+For a successful program, follow one piece of information forward:
+
+```text
+source spelling
+  -> parsed shape
+  -> resolved declaration
+  -> checked type or operation
+  -> intermediate meaning
+  -> target behavior
+```
+
+For a rejected program, begin with the visible diagnostic and work backward:
+
+```text
+diagnostic code and source span
+  <- rule that rejected the program
+  <- resolved names and inferred types used by the rule
+  <- syntax shape that reached the rule
+```
+
+The second route is often shorter. A diagnostic is a visible statement of
+which stage owns a rule.
+
+## A small example
+
+Imagine a call with an argument of the wrong type. The exact structs and
+functions may change, but the responsibility chain remains recognizable:
+
+```text
+parser       preserves a call shape and its source span
+resolver     connects the callee name to one declaration
+checker      compares the argument with the declared parameter type
+diagnostic   reports the mismatch at the useful source location
+backend      is not reached for this invalid program
+```
+
+If a refactor renames the call node or moves diagnostic formatting, ask whether
+these responsibilities still hold. If they do, update the snapshot map; do not
+rewrite the conceptual explanation.
+
+## Find the current implementation
+
+<Steps>
+
+1. **Choose one observable question**
+
+   Begin with a command, diagnostic, generated fragment, or program output.
+   “Where is everything parsed?” is too broad. “Where is this call rejected?”
+   is a useful question.
+
+2. **Collect search words from the boundary**
+
+   A diagnostic code, command name, source spelling, IR operation, manifest
+   field, or emitted symbol is usually more durable than a helper name.
+
+3. **Use the matching change journey**
+
+   The [reference journey](../../reference-compiler/change-journey/) and
+   [Native journey](../../native-compiler/change-journey/) show which
+   responsibilities should be crossed and which should not.
+
+4. **Open the pinned map only when you need an address**
+
+   The [reference map](../../reference-compiler/map/) and
+   [Native map](../../native-compiler/map/) provide exact source locations for
+   their named versions.
+
+5. **Run the smallest visible proof**
+
+   Use an existing focused test or one executable trace before reading farther.
+   Evidence tells you whether your mental model matches the compiler.
+
+</Steps>
+
+<Aside type="tip" title="A moved link is not automatically a broken explanation">
+  First decide whether only the address moved or whether responsibility moved.
+  The former needs a map update. The latter needs a boundary explanation and
+  usually a design review.
+</Aside>
+
+## What to remember
+
+Read for responsibility before structure. Keep concepts separate from current
+addresses. Ask for an input, a guarantee, a consumer, and evidence at every
+handoff.
+
+That method is slower than opening the largest file for the first five minutes.
+It is much faster over the life of a changing compiler.

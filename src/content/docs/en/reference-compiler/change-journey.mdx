@@ -1,0 +1,145 @@
+---
+title: Reference compiler — change journey
+description: Follow one portable TypeRB change through stable compiler responsibilities and evidence.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+This page is a responsibility map. It does not assume that today's packages,
+types, or helper functions keep their names.
+
+Use it when a settled TypeRB change must travel through the Go reference
+compiler. Open the [versioned big map](../map/) only when you need current code
+addresses.
+
+## Begin with ownership
+
+Ask one question before changing compiler code:
+
+> Does this change what a portable TypeRB program means?
+
+If yes, the language specification, an accepted design decision, and
+cross-backend behavior own the answer. Generated Go, Ruby, or TypeScript is
+evidence of that answer; it is not the source of the semantics.
+
+Use the reference repository's
+[language specification](https://github.com/type-rb/type-rb/blob/main/docs/specification.md)
+for normative behavior and its
+[decision records](https://github.com/type-rb/type-rb/tree/main/docs/decisions)
+for durable architectural rationale.
+
+If no, identify the narrower owner: diagnostic presentation, formatter output,
+editor behavior, one target representation, command-line behavior, or a
+tooling protocol.
+
+## The portable change path
+
+<Steps>
+
+1. **Describe the source case**
+
+   Write one valid example and at least one nearby invalid example. State the
+   intended behavior without referring to a compiler data structure.
+
+2. **Preserve the authored shape**
+
+   Lexing and parsing recognize the source and retain enough location and
+   spelling information for diagnostics and formatting. Their output says
+   *what was written*, not yet whether it is valid.
+
+3. **Establish semantic identity**
+
+   Resolution connects names to declarations. Checking determines types,
+   validates calls and control flow, and owns correctness diagnostics. This is
+   where source spelling becomes one portable meaning.
+
+4. **Carry checked meaning across the middle**
+
+   Lowering records the operation in typed intermediate form. Backends should
+   consume that checked meaning rather than inspect parser state or rediscover
+   language rules independently.
+
+5. **Project the meaning into every affected target**
+
+   Go, Ruby, and TypeScript may use different target mechanisms. Their
+   observable TypeRB behavior must agree unless the source used an explicit
+   target-specific API.
+
+6. **Reconnect user-facing tools**
+
+   Formatting, editor services, linting, commands, and machine-readable reports
+   reuse selected compiler boundaries. Update only the surfaces whose input or
+   answer changed.
+
+</Steps>
+
+## Boundary contracts
+
+| Responsibility | Input | Exit guarantee | Strong evidence |
+| --- | --- | --- | --- |
+| Source recognition | Characters and project source | Lossless tokens and syntax shape with locations | Parsed shape, formatter round trip |
+| Name and type analysis | Syntax plus declarations | Canonical identities, checked types, deterministic diagnostics | Valid and invalid checker cases |
+| Lowering | Checked program | Typed, backend-neutral operations | Focused IR assertions |
+| Target generation | Typed IR plus explicit target configuration | Target source preserving portable behavior | Generated-source and runtime tests for every affected backend |
+| Tooling services | Compiler snapshot or diagnostic stream | Stable user-facing answer | Command, editor, or protocol test at its public boundary |
+
+The table describes obligations, not module names. A refactor may merge two
+internal passes or split one pass into several helpers while leaving these
+contracts intact.
+
+## Choose the smallest change envelope
+
+| Kind of change | Usually crosses | Should not be rediscovered in |
+| --- | --- | --- |
+| Source syntax | recognition, formatting, checking; sometimes IR and targets | a single backend parser workaround |
+| Type or control-flow rule | resolution/checking, diagnostics; IR when valid meaning changes | target code generation |
+| Portable runtime behavior | checked operation, typed IR, every affected target | one target-only compatibility branch |
+| Target representation | one backend and its toolchain tests | parser or source type rules |
+| Editor presentation | language service or protocol surface | portable semantics, when the compiler snapshot already contains the answer |
+
+<Aside type="caution" title="A smaller diff is not always a smaller change">
+  Implementing a portable rule in one backend may touch fewer lines, but it
+  creates several meanings for one language. Follow ownership even when the
+  correct path crosses more boundaries.
+</Aside>
+
+## Build an evidence ladder
+
+Do not begin with the largest test suite. Add evidence in the same order that
+meaning travels.
+
+1. A tiny source case states the intended behavior.
+2. An invalid neighbor proves the owning diagnostic and source location.
+3. A checked or IR assertion proves the shared representation.
+4. Generated-source checks prove each affected projection.
+5. Runtime checks prove observable agreement.
+6. Formatter, editor, CLI, or protocol checks prove any changed surrounding
+   surface.
+
+The ladder makes failures local. If IR is already wrong, a target runtime
+failure is not the first useful place to debug.
+
+## Search without trusting a directory name
+
+Start with words visible at a boundary:
+
+```sh
+rg -n '<diagnostic code or message fragment>' --glob '*.go'
+rg -n '<syntax, type, or IR term>' --glob '*.go'
+rg -n '<generated fragment>' --glob '*_test.go'
+```
+
+Then trace one producer and one consumer. Avoid opening every search result.
+The goal is to identify the handoff, not to memorize the package tree.
+
+## A practical reading order
+
+1. Run the [reference executable trace](../trace/).
+2. Pick one visible source expression from the fixture.
+3. Use this journey to name the responsibilities it should cross.
+4. Use the [big map](../map/) to find those responsibilities in the pinned
+   version.
+5. Read one focused test at each boundary before reading its implementation.
+
+When you can explain why one piece of information is present at each handoff,
+you know enough to begin a focused change.

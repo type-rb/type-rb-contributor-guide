@@ -16,6 +16,26 @@ Assume the reader can program, but may never have studied a compiler.
 
 A reader should be able to stop after any section with a useful mental model.
 
+## Separate durable guidance from snapshots
+
+Use four kinds of contributor material deliberately:
+
+- **Foundations** explain compiler concepts without repository paths.
+- **Change journeys** explain responsibilities, handoffs, and evidence without
+  depending on private helper names.
+- **Big maps** are versioned snapshots with exact source links.
+- **Executable traces** prove a small user-visible path in CI.
+
+Do not place a filename in a foundation merely because it is convenient today.
+Put the responsibility in the foundation or journey and the current address in
+the matching big map. When code moves, first ask whether only an address moved
+or whether responsibility changed. Only the second case should require a
+conceptual rewrite.
+
+The site check rejects full Git revisions in foundations and change journeys.
+This is a narrow guardrail: canonical specifications and decision records may
+still be linked there, while version-specific source addresses belong in maps.
+
 ## Keep the two audiences separate
 
 This site teaches contributors how the language implementations work. User

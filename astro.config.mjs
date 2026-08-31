@@ -57,12 +57,14 @@ export default defineConfig({
 					label: 'Foundations',
 					items: [
 						{ label: 'How a compiler works', link: '/foundations/how-a-compiler-works/' },
+						{ label: 'Read changing code', link: '/foundations/reading-a-changing-codebase/' },
 					],
 				},
 				{
 					label: 'Reference compiler',
 					items: [
 						{ label: 'Big map', link: '/reference-compiler/map/' },
+						{ label: 'Change journey', link: '/reference-compiler/change-journey/' },
 						{ label: 'Executable trace', link: '/reference-compiler/trace/' },
 					],
 				},
@@ -70,6 +72,7 @@ export default defineConfig({
 					label: 'Native compiler',
 					items: [
 						{ label: 'Big map', link: '/native-compiler/map/' },
+						{ label: 'Change journey', link: '/native-compiler/change-journey/' },
 						{ label: 'Executable trace', link: '/native-compiler/trace/' },
 					],
 				},
