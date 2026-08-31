@@ -26,6 +26,12 @@ async function exists(filename) {
 }
 
 const failures = [];
+const rootHtml = await readFile(path.join(outputRoot, 'index.html'), 'utf8');
+const expectedRootRedirect = `${siteBase}en/`;
+if (!rootHtml.includes(`content="0;url=${expectedRootRedirect}"`)) {
+	failures.push(`/index.html: expected a redirect to ${expectedRootRedirect}`);
+}
+
 for (const filename of await htmlFiles(outputRoot)) {
 	const pagePath = `/${path.relative(outputRoot, filename).split(path.sep).join('/')}`;
 	const pageURL = new URL(pagePath, origin);
