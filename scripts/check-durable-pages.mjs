@@ -15,14 +15,14 @@ async function contentFiles(directory) {
 	return files;
 }
 
-function isDurablePage(filename) {
+function allowsPinnedRevision(filename) {
 	const relative = path.relative(contentRoot, filename).split(path.sep).join('/');
-	return relative.includes('/foundations/') || relative.endsWith('/change-journey.mdx');
+	return relative.endsWith('/map.mdx');
 }
 
 const failures = [];
 for (const filename of await contentFiles(contentRoot)) {
-	if (!isDurablePage(filename)) continue;
+	if (allowsPinnedRevision(filename)) continue;
 	const source = await readFile(filename, 'utf8');
 	if (fullRevision.test(source)) {
 		failures.push(path.relative(process.cwd(), filename));
@@ -30,10 +30,10 @@ for (const filename of await contentFiles(contentRoot)) {
 }
 
 if (failures.length > 0) {
-	console.error('Durable pages must not pin full source revisions:');
+	console.error('Only versioned big maps may pin full source revisions:');
 	for (const failure of failures) console.error(`- ${failure}`);
 	console.error('Move version-specific source addresses to the matching big map.');
 	process.exit(1);
 }
 
-console.log('Durable pages: no pinned source revisions');
+console.log('Content boundaries: full source revisions appear only in versioned maps');

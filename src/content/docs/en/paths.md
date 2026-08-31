@@ -52,3 +52,8 @@ repository names much less mysterious.
 Then read [Read a changing codebase](../foundations/reading-a-changing-codebase/).
 It explains which parts of this guide are durable and which parts are pinned
 snapshots that move with an implementation.
+
+Keep the [contributor glossary](../glossary/) open while unfamiliar terms are
+still frequent. Before implementing a change, use
+[Test a compiler change](../foundations/testing-compiler-changes/) to choose
+evidence at the responsibility boundary instead of at a private helper.
