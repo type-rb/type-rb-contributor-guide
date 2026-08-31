@@ -1,0 +1,114 @@
+---
+title: Contributor workflow and test command matrix
+description: Choose a fast focused command, then expand verification in proportion to the changed boundary.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Use this page as a command index, not as a substitute for the repositories'
+canonical contributor documentation. Start with the smallest check that can
+prove your claim. Run broad checks after the focused failure is understood.
+
+## Reference compiler
+
+Run these commands from the `type-rb` repository root.
+
+| What you changed | Fast feedback | Broader evidence |
+| --- | --- | --- |
+| Parser or source shape | `go test ./internal/parser` | `go test ./...` |
+| Checker, lowering, or cross-backend compilation | `go test ./internal/compiler` | `go test ./...` |
+| Portable numeric runtime behavior | `go test ./internal/cli -run '^TestRunPortableIntegerAndIEEEFloatArithmeticAcrossBackends$'` | all affected target toolchains, then `go test ./...` |
+| One named Go test | `go test ./path/to/package -run '^TestName$'` | its package, then affected consumers |
+| Command behavior | the named test in `./internal/cli` | representative command execution and `go test ./...` |
+| Any Go source | the owning package test | `go test ./...` and `go vet ./...` |
+
+Build a local compiler for an executable trace with:
+
+```sh
+go build -o /tmp/trb ./cmd/trb
+```
+
+Then, from the contributor-guide checkout:
+
+```sh
+TYPE_RB_TRB=/tmp/trb ./scripts/trace-reference.sh
+```
+
+The reference repository's
+[`docs/development.md`](https://github.com/type-rb/type-rb/blob/main/docs/development.md)
+is authoritative when commands or package boundaries change.
+
+## Native compiler
+
+Run these commands from the `type-rb-native` repository root with the exact
+reference `trb` revision declared by `TYPE_RB_REVISION`.
+
+| What you changed | Fast feedback | Broader evidence |
+| --- | --- | --- |
+| TypeRB-authored compiler source | `trb check --config compiler/gate4/trbconfig.jsonc` | repository-wide `trb check` required by current CI |
+| Compiler-focused tests | `TYPE_RB_NATIVE_ROOT="$PWD" trb test --config compiler/gate4/trbconfig.jsonc` | `TYPE_RB_NATIVE_ROOT="$PWD" trb test` |
+| Formatting | `trb fmt --check .` | the same check over every changed TypeRB path |
+| Compatibility metadata | `python3 -m unittest tools/compatibility_manifest_test.py` | `python3 tools/compatibility_manifest.py --reference-trb /path/to/pinned/trb` |
+| Frontend behavior | nearest valid and invalid conformance cases | deterministic diagnostics, repeated QBE, and representative execution |
+| QBE, runtime, ABI, or target behavior | named boundary harness from the accepted experiment | target inspection, conformance, cleanup, and retained regression corpus |
+| Bootstrap-affecting behavior | one candidate build with the real compiler | required adjacent generations and exact fixed-point policy |
+
+Native deliberately has no single cheap command that proves every experimental
+claim. The current complete baseline and tool identities live in
+[`CONTRIBUTING.md`](https://github.com/type-rb/type-rb-native/blob/main/CONTRIBUTING.md)
+and the relevant accepted gate or decision record.
+
+<Aside type="caution" title="Do not invent a smaller bootstrap proof">
+  If a change can alter compiler reproduction, use the repository's named
+  bootstrap harness and required generations. Compiling the compiler once is a
+  useful local check, but it is not fixed-point evidence.
+</Aside>
+
+From the contributor-guide checkout, the small seed-backed boundary is:
+
+```sh
+./scripts/trace-native.sh
+```
+
+It proves checking and deterministic QBE emission for one input. It does not
+replace Native conformance, runtime, target, or bootstrap evidence.
+
+## Contributor guide
+
+| Change | Required local check |
+| --- | --- |
+| Any page or navigation change | `bun run check` |
+| Reference trace, fixture, or explanation of its output | `./scripts/trace-reference.sh` |
+| Native trace, fixture, or explanation of its output | `./scripts/trace-native.sh` |
+| Pinned code clinic or map | open every changed source link and run the matching trace |
+
+The Native trace may stop after QBE IL when QBE is unavailable. State that
+boundary; do not report native execution as tested.
+
+## Pick evidence in this order
+
+1. **Owning boundary:** the earliest public phase that can be wrong.
+2. **Shared handoff:** checked types, typed IR, deterministic QBE, or another
+   representation consumed downstream.
+3. **Affected consumers:** every portable backend, Native runtime boundary, or
+   tool surface that uses the changed meaning.
+4. **Visible behavior:** output, diagnostic, status, artifact, or protocol.
+5. **Broad regression:** the repository-wide suite.
+
+When a broad check fails, this order tells you which earlier claim already
+passed and where to continue debugging.
+
+## Pull request boundary matrix
+
+| Change kind | The pull request should say |
+| --- | --- |
+| Portable language behavior | accepted behavior, valid–invalid pair, IR effect, and affected backends |
+| Diagnostic | semantic condition, structured identity or location, and rendered surface |
+| Reference target-only correction | why portable meaning is unchanged and which target boundary was wrong |
+| Native subset change | reference behavior, exact compatibility boundary, deterministic invalid behavior, and conformance coverage |
+| Native runtime or ABI | layout/calling/runtime contract, target profile, boundary failures, and cleanup |
+| Bootstrap | actual compiler chain, compared identities, fixed-point rule, and recovery boundary |
+| Performance | correctness evidence, fixed workload and tools, repetitions, statistic, variance, and threshold |
+
+If the row requires an unresolved semantic or architectural decision, the next
+step is a design discussion rather than a larger implementation diff.

@@ -1,0 +1,267 @@
+---
+title: Native code clinic — follow a String to QBE
+description: Follow one TypeRB String and puts call through the exact Native seed source that emits the trace's QBE.
+---
+
+import { Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Run the [Native executable trace](../trace/) first. This clinic follows its
+String literal and `puts` call through the TypeRB-authored frontend into two
+small QBE products: static data and an exported entry function.
+
+<Aside type="note" title="Two identities, two purposes">
+  The trace executes
+  [`bootstrap-seed-2026-08-30`](https://github.com/type-rb/type-rb-native/releases/tag/bootstrap-seed-2026-08-30),
+  whose source revision is
+  [`0058818`](https://github.com/type-rb/type-rb-native/commit/0058818314977633c50393796ef9b9f8f1fda50f).
+  This clinic reads that exact source. The [Native big map](../map/) describes
+  the later `0.1.0-dev` revision
+  [`ae9b9d6`](https://github.com/type-rb/type-rb-native/commit/ae9b9d6dffa963413369285f7812286ada707df2),
+  69 commits after the seed. They share the `compiler/gate4` application path,
+  but their source is not byte-identical. Use this clinic to explain the trace
+  and the map to navigate the newer snapshot.
+</Aside>
+
+This correspondence assumes the trace's default downloaded seed. A compiler
+supplied through `TYPE_RB_NATIVE_COMPILER` can represent different source.
+
+## Hold source, data, and control together
+
+<Tabs>
+  <TabItem label="TypeRB source">
+
+```trb {2}
+def main()
+	puts("hello from TypeRB Native")
+	return
+end
+```
+
+  </TabItem>
+  <TabItem label="QBE data">
+
+```qbe {1}
+data $g4s7 = align 8 { l 24,
+	b 104 101 108 108 111 32 102 114 111 109 32 84 121 112 101 82,
+	b 66 32 78 97 116 105 118 101,
+	b 0 }
+```
+
+  </TabItem>
+  <TabItem label="QBE control">
+
+```qbe {3,9}
+function $g4f0() {
+@start
+	call $g4_puts(l $g4s7)
+	ret
+}
+
+export function w $main(w %argc, l %argv) {
+@start
+	call $g4f0()
+	ret 0
+}
+```
+
+  </TabItem>
+</Tabs>
+
+The number `7` is a token-derived symbol in this snapshot. It is not a stable
+public name. Search for the data declaration or `g4_puts` handoff, not for the
+exact `$g4s7` spelling in a future revision.
+
+## 1. The lexer preserves the decoded String
+
+The lexer enters `gate4_scan_string` after seeing `"`. It collects characters,
+decodes supported escapes, and stores a token with kind `3`:
+
+```trb {7}
+def gate4_scan_string(mut state: Gate4Compiler, source: String, mut position: Array<Integer>, line: Integer)
+	# scan characters and supported escapes
+	if closed
+		gate4_push_token(state, 3, text, line)
+	else
+		gate4_diagnostic(state, "TRBN4001", line, "unterminated String literal")
+	end
+end
+```
+
+Read the exact
+[`gate4_scan_string` implementation](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L3656-L3707).
+Its output is decoded text plus a source line. It has not yet established that
+the surrounding call is well typed.
+
+**Small TypeRB note:** `mut` marks bindings or parameters that may change.
+`Array<Integer>` and small records are used as explicit compiler storage; they
+are implementation mechanisms, not new source-language phases.
+
+## 2. Parsing accepts a String as a primary expression
+
+This seed's parser validates expression syntax over token storage. A kind-`3`
+token is a complete primary expression, so parsing advances once:
+
+```trb {2-3}
+if kind == 3
+	gate4_advance(position)
+else
+	# grouped expressions and other primary forms
+end
+```
+
+The branch lives in
+[`gate4_parse_primary_syntax`](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L3978-L3997).
+Unlike the reference compiler clinic, this path does not need a separate public
+AST node for the lesson. The durable responsibility is still the same: accept
+the authored shape before checking its meaning.
+
+## 3. Checking connects String to puts
+
+The checker gives a kind-`3` primary the type `String`:
+
+```trb {1-3}
+if kind == 3
+	gate4_advance(position)
+	return gate4_checked_value("String", 0, "", 0)
+end
+```
+
+See
+[`gate4_check_primary`](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L5779-L5804).
+The call checker then treats `puts` as a one-argument function returning `Void`
+and expects that argument to be `String`:
+
+```trb {1-3,5-7}
+if callee.name == "puts"
+	function_index =- 1
+	result_type = "Void"
+end
+# while checking the argument
+if callee.name == "puts"
+	argument_expected = "String"
+end
+```
+
+Read the complete
+[`gate4_check_call` branch](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L5886-L5939).
+Changing the fixture to `puts(42)` should therefore stop before QBE emission
+with a type diagnostic.
+
+## 4. Emission gives the String a data identity
+
+Before functions are emitted, `gate4_emit_static_strings` walks String tokens,
+deduplicates equal values when appropriate, and writes a QBE data declaration:
+
+```trb {4}
+gate4_output_line(
+	output,
+	"data $g4s" + gate4_integer_string(token_index) +
+		" = align 8 { l " + gate4_integer_string(value.size()) + ",",
+)
+```
+
+The
+[`static String emitter`](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L614-L679)
+then emits the bytes and a trailing zero. For this fixture, `l 24` records the
+24-byte content length and the `b` items spell the UTF-8-compatible ASCII text.
+
+When the expression emitter sees the same String token, it returns the matching
+global symbol as a checked `String` value:
+
+```trb {3}
+if kind == 3
+	gate4_advance(position)
+	return gate4_emitted_value("$g4s" + gate4_integer_string(canonical), "String", 0, "", 0, "")
+end
+```
+
+See
+[`gate4_emit_primary`](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L1901-L1922).
+The data producer and expression consumer agree on one canonical symbol.
+
+## 5. puts and main make control visible
+
+The direct-call emitter turns the checked `puts` call into:
+
+```trb {2}
+if callee.name == "puts"
+	gate4_output_line(output, "\tcall $g4_puts(" + arguments + ")")
+	return gate4_emitted_value("", "Void", 0, "", 0, "")
+end
+```
+
+That branch is in
+[`gate4_emit_direct_call`](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L1687-L1693).
+The runtime's
+[`$g4_puts` function](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L973-L980)
+loads the length, advances eight bytes to the content, writes it, and writes a
+newline.
+
+Finally, the ordinary application entry finds the source `main`, calls its
+emitted function, and returns status zero:
+
+```trb {4-5}
+gate4_output_line(output, "export function w $main(w %argc, l %argv) {")
+gate4_output_line(output, "@start")
+main_index := gate4_find_function_in_module(state, state.entry_module[0], "main")
+gate4_output_line(output, "\tcall $g4f" + gate4_integer_string(main_index) + "()")
+gate4_output_line(output, "\tret 0")
+```
+
+Read the exact
+[`main` emission](https://github.com/type-rb/type-rb-native/blob/0058818314977633c50393796ef9b9f8f1fda50f/compiler/gate4/src/compiler.trb#L2635-L2641).
+
+## The QBE needed for this page
+
+You only need six pieces of notation:
+
+| QBE spelling | Meaning here |
+| --- | --- |
+| `data $g4s7` | a global data definition; `$` names a global symbol |
+| `l` | a 64-bit long value, used here for lengths and pointers |
+| `w` | a 32-bit word value, used for the process status and `argc` |
+| `b` | individual bytes in static data |
+| `%argc` | a function-local temporary; `%` names local values |
+| `@start`, `call`, `ret` | a basic-block label, a call, and a return |
+
+Learn more QBE only when a code path introduces another operation. This keeps
+the backend notation attached to the TypeRB value whose behavior you already
+understand.
+
+## Run focused evidence in a current checkout
+
+The clinic explains the immutable seed source. For a new Native change, use the
+commands owned by your current checkout:
+
+```sh
+trb check --config compiler/gate4/trbconfig.jsonc
+TYPE_RB_NATIVE_ROOT="$PWD" trb test --config compiler/gate4/trbconfig.jsonc
+```
+
+Then run the contributor-guide trace to observe the fixed seed boundary again.
+Do not treat agreement with this older seed as proof that a current bootstrap
+chain or compatibility claim passes.
+
+## Check yourself
+
+1. Which stage first says the literal has type `String`?
+2. Why do the static-data emitter and expression emitter need the same
+   canonical symbol?
+3. What additional claim would require more than the QBE emitted by this trace?
+
+<details>
+  <summary>Check your answers</summary>
+
+1. The checker; the lexer preserves decoded text and the parser accepts its
+   syntax first.
+2. The function call must refer to the exact data object that contains the
+   literal's length and bytes.
+3. Running native code, proving a runtime or ABI change, claiming target
+   portability, or proving self-hosting would require the corresponding QBE,
+   toolchain, conformance, target, or multi-generation evidence.
+
+</details>
+
+Continue with the [workflow and test matrix](../../contributor-workflow/) and
+the [Native change journey](../change-journey/). Use the [big map](../map/) to
+find the corresponding responsibilities in the newer implementation snapshot.
