@@ -1,0 +1,85 @@
+---
+title: Reference compiler — executable trace
+description: Run one tiny TypeRB program through checking, Go generation, and execution.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+This trace keeps the program small enough to hold in your head. It lets the
+compiler show three visible products: a successful check, generated Go source,
+and program output.
+
+## What you need
+
+- a `trb` command on your `PATH`; and
+- a Go toolchain, because the trace uses the default Go mode.
+
+You can point the script at another compiler binary with `TYPE_RB_TRB`.
+
+## Run it
+
+From the contributor-guide repository:
+
+```sh
+./scripts/trace-reference.sh
+```
+
+<Steps>
+
+1. **Read the source**
+
+   The script prints [`traces/reference/answer.trb`](https://github.com/type-rb/type-rb-contributor-guide/blob/main/traces/reference/answer.trb).
+
+2. **Check it**
+
+   `trb check` runs parsing, name resolution, and type checking. It does not
+   generate target source.
+
+3. **Generate Go**
+
+   `trb build --stdout` runs the complete frontend, lowers the checked program,
+   and asks the Go backend for source. The script shows only the beginning; the
+   complete temporary file is deleted when the trace ends.
+
+4. **Run it**
+
+   `trb run` generates, compiles, and starts the program. The final line is:
+
+   ```text
+   answer=42
+   ```
+
+</Steps>
+
+## Connect the output to the map
+
+```text
+answer.trb
+  -> cmd/trb selects standalone Go mode
+  -> compiler parses, resolves, and checks
+  -> lower.Program creates typed IR
+  -> codegen.Generate emits Go
+  -> Go toolchain builds and runs the program
+```
+
+The script cannot print every in-memory compiler value, and that is useful:
+the normal command-line boundary stays stable while internal structures can
+improve. Use the [big map](../map/) to choose the next internal boundary to
+inspect.
+
+## Make one safe experiment
+
+Change the return value in `answer()` from `Integer` to a string:
+
+```text
+return "forty-two"
+```
+
+Run the trace again. It should stop during checking, before Go generation. Read
+the diagnostic as a compact report of the checker's job: expected type, actual
+type, and source location.
+
+<Aside type="tip" title="Restore the fixture after experimenting">
+  Keep the checked-in trace small and deterministic. Add a second fixture when
+  you want to teach a genuinely different path.
+</Aside>

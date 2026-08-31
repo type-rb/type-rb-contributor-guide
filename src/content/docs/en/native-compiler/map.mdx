@@ -1,0 +1,138 @@
+---
+title: Native compiler — big map
+description: The current native compilation path, ownership boundaries, and bootstrap chain.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Pipeline from '../../../../components/Pipeline.astro';
+
+TypeRB Native is an evidence-driven experiment. Its goal is not merely “emit
+machine code.” It explores whether a TypeRB-authored compiler and runtime can
+build useful native programs and reproduce the compiler itself.
+
+<Aside type="caution" title="Experimental, not a supported target">
+  The Native compiler accepts a deliberately bounded TypeRB subset. Unsupported
+  behavior must fail clearly; it must not fall back to different semantics.
+</Aside>
+
+<Aside type="note" title="Map revision">
+  Code links on this page are pinned to TypeRB Native revision
+  `ae9b9d6dffa963413369285f7812286ada707df2`.
+</Aside>
+
+## The ordinary compilation path
+
+<Pipeline
+	label="TypeRB Native compilation pipeline"
+	stages={['TypeRB source', 'Native lexer and parser', 'Native resolver and checker', 'Checked internal model', 'QBE IL', 'QBE', 'Assembler and linker', 'Native executable']}
+/>
+
+The compiler-owned stages are written in TypeRB. QBE and the platform C
+toolchain are explicit external dependencies.
+
+The most direct current frontend tour is
+[`compiler/gate4/src/compiler.trb`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/compiler/gate4/src/compiler.trb).
+Despite the historical `gate4` directory name, this source has grown into the
+ordinary self-hosted compiler path used by later bootstrap work.
+
+## Find the stages in one source file
+
+The main compiler file is large, but its names provide a route:
+
+| Stage | Search for | Job |
+| --- | --- | --- |
+| Command boundary | `compiler_main`, `compiler_file_main`, `main` | Choose `check`, `emit-qbe`, or `build` behavior |
+| Lexing | `gate4_lex_source`, `gate4_lex` | Turn source characters into the compiler's token storage |
+| Parsing | `gate4_parse_*` | Recognize declarations, types, statements, and expressions |
+| Resolution | `gate4_resolve` | Connect imports, declarations, and local names |
+| Type checking | `gate4_check` | Verify the supported static types and calls |
+| QBE emission | `gate4_emit_qbe` | Produce deterministic QBE IL and runtime support |
+| Platform build | `build` command path | Invoke explicit QBE and C toolchain paths, then publish an executable |
+
+Two smaller modules support the frontend:
+
+- [`storage.trb`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/compiler/gate4/src/storage.trb)
+  provides bounded storage used by compiler tables; and
+- [`path.trb`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/compiler/gate4/src/path.trb)
+  provides the path operations needed by file and project loading.
+
+## The verified native boundary
+
+The repository also contains the earlier source-connected pipeline that made
+native semantics explicit step by step:
+
+```text
+reference compiler snapshot
+  -> strict decoder
+  -> verified Native MIR
+  -> QBE emitter
+  -> QBE and system toolchain
+```
+
+Useful landmarks include
+[`src/native_mir.trb`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/src/native_mir.trb),
+the gate-specific MIRs, and
+[`src/qbe3.trb`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/src/qbe3.trb).
+These files are both working implementation and a record of how the experiment
+established verification, layout, managed runtime, and code-generation
+boundaries.
+
+<Aside type="tip" title="Do not read gate numbers as ordinary compiler phases">
+  A gate is an experiment checkpoint with acceptance evidence. It is not a
+  runtime stage that every program passes through. Start with the current path,
+  then use older gates to understand why a boundary exists.
+</Aside>
+
+## The bootstrap map
+
+Self-hosting adds a second map. A compiler is used to build the next compiler:
+
+```text
+previous Native seed (B1)
+  -> builds B2 from the TypeRB compiler source
+B2
+  -> builds B3 from the same source
+B3
+  -> builds B4 from the same source
+
+B2 == B3 == B4 under the fixed-point policy
+```
+
+The ordinary release/bootstrap graph begins with a previously published Native
+seed. The Go reference compiler is a recovery tool and differential oracle; it
+is not part of that ordinary Native-to-Native chain.
+
+Start with these files when working on bootstrap or reproducibility:
+
+| Concern | Start here |
+| --- | --- |
+| Ordinary chain and fixed-point checks | [`tools/bootstrap-seed.sh`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/tools/bootstrap-seed.sh) |
+| Published seed policy | [`docs/gate-6-bootstrap-seed-distribution.md`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/docs/gate-6-bootstrap-seed-distribution.md) |
+| Native-to-Native closure | [`docs/gate-6-native-bootstrap.md`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/docs/gate-6-native-bootstrap.md) |
+| Pinned tool and repository identities | [`compatibility/current.json`](https://github.com/type-rb/type-rb-native/blob/ae9b9d6dffa963413369285f7812286ada707df2/compatibility/current.json) |
+
+## Ownership boundary
+
+| Reference repository owns | Native repository owns |
+| --- | --- |
+| Portable syntax and language semantics | The experimental Native implementation |
+| Cross-backend conformance behavior | Native MIR and its verification |
+| Portable packages and target contracts | Native layout, ABI, runtime, and backend integration |
+| Go, Ruby, and TypeScript generation | Native bootstrap and measurement evidence |
+
+If Native work reveals a language question, settle that question through the
+reference language design and conformance process. Keep Native-only mechanisms
+inside the Native repository.
+
+## A useful reading order
+
+1. Run the [Native executable trace](../trace/).
+2. Search `compiler.trb` for `compiler_file_main` and follow the selected mode.
+3. Follow one tiny construct through `gate4_lex`, `gate4_parse_*`,
+   `gate4_resolve`, and `gate4_check`.
+4. Find the same construct in `gate4_emit_*`.
+5. Read one conformance case and the gate document that explains its boundary.
+6. Read the bootstrap map only when the ordinary compile path is clear.
+
+This order separates “how one program is compiled” from “how the compiler is
+reproduced.” Both matter, but they answer different questions.

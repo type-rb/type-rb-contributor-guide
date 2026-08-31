@@ -1,0 +1,111 @@
+---
+title: Reference compiler — big map
+description: The major paths and code landmarks in the Go reference compiler.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import Pipeline from '../../../../components/Pipeline.astro';
+
+The reference compiler is the best place to begin when a change affects the
+portable TypeRB language. It owns the complete path from source text to checked
+Go, Ruby, or TypeScript output.
+
+<Aside type="note" title="Map revision">
+  Code links on this page are pinned to TypeRB revision
+  `8283239469d1bedd78d825ff34c2c2771e3fe902`. The concepts are meant to stay
+  useful; exact filenames can move.
+</Aside>
+
+## The central path
+
+<Pipeline
+	label="Reference compiler pipeline"
+	stages={['Load source and project', 'Lex and parse', 'Load declarations', 'Resolve names', 'Check types', 'Lower to typed IR', 'Generate Go, Ruby, or TypeScript']}
+/>
+
+The shortest readable version of this pipeline lives in
+[`internal/compiler/compiler.go`](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/compiler/compiler.go).
+Look for `compileSourceUnit`. It calls the major phases in order.
+
+## Code landmarks
+
+| Question | Start here | What you will find |
+| --- | --- | --- |
+| How are characters grouped? | [`internal/lexer`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/lexer) and [`internal/token`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/token) | Lossless tokens, comments, and source spans |
+| How is syntax recognized? | [`internal/parser`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/parser) | A handwritten recursive-descent parser, plus Pratt-style expression parsing |
+| What shape does syntax use? | [`internal/ast`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/ast) | Declarations, statements, expressions, and their spans |
+| Where do names connect? | [`internal/resolver`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/resolver) | Module catalogs, imports, declarations, and name resolution |
+| Where are types verified? | [`internal/checker`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/checker) | Expression types, calls, control flow, and type diagnostics |
+| What crosses into code generation? | [`internal/lower`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/lower) and [`internal/ir`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/ir) | The checked program lowered into portable typed IR |
+| How are targets produced? | [`internal/codegen`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/codegen) | Shared generation entry and target-specific generators |
+| How are errors represented? | [`internal/diagnostic`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/diagnostic) | Stable codes, severity, messages, locations, and suggestions |
+
+Use this table as an index, not as a reading assignment. Open the row that
+answers your current question.
+
+## Three ways into the compiler
+
+The central path is surrounded by three user-facing routes.
+
+### Command-line route
+
+```text
+cmd/trb
+  -> command and project loading
+  -> compiler.CompileProject or compiler.AnalyzeProject
+  -> diagnostics, generated source, or a target toolchain
+```
+
+Start at [`cmd/trb/main.go`](https://github.com/type-rb/type-rb/blob/8283239469d1bedd78d825ff34c2c2771e3fe902/cmd/trb/main.go)
+when you are tracing `trb check`, `trb build`, `trb run`, or `trb test`.
+
+### Editor route
+
+```text
+editor request
+  -> LSP
+  -> compiler service snapshot
+  -> compiler analysis
+  -> language service answer
+```
+
+The important directories are
+[`internal/lsp`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/lsp),
+[`internal/compilerservice`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/compilerservice), and
+[`internal/languageservice`](https://github.com/type-rb/type-rb/tree/8283239469d1bedd78d825ff34c2c2771e3fe902/internal/languageservice).
+The editor asks questions about a compiler snapshot instead of compiling and
+running the project after every keystroke.
+
+### Tooling route
+
+Formatting, linting, package installation, adapters, the REPL, and site tools
+reuse parts of the same language model. They are not extra compiler phases.
+Trace each tool inward until it reaches the shared parser, resolver, checker,
+or project analysis.
+
+## A useful reading order
+
+For a first code-reading session:
+
+1. Read only `compileSourceUnit` in `internal/compiler/compiler.go`.
+2. Run the [reference compiler trace](../trace/).
+3. Open the parser node for one construct in the trace program.
+4. Find the checker rule for the same construct.
+5. Find its IR node and one target generator.
+
+This follows one idea across boundaries. It is easier than reading one whole
+directory before you know what consumes it.
+
+## Where should a change go?
+
+| Desired change | Likely first area |
+| --- | --- |
+| New or changed syntax | lexer, parser, AST, formatter |
+| Different name/import behavior | resolver and project loading |
+| Different type rule | checker, then conformance tests |
+| A portable execution behavior | IR, all affected backends, cross-backend tests |
+| Better editor information | compiler service and language service, using shared analysis |
+| Target-specific output correction | one code generator, while preserving portable behavior |
+
+If the change affects what TypeRB programs mean, write down the intended
+language behavior before treating it as a backend detail.
