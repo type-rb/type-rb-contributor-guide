@@ -119,6 +119,10 @@ meaning travels.
 The ladder makes failures local. If IR is already wrong, a target runtime
 failure is not the first useful place to debug.
 
+Use [Test a compiler change](../../foundations/testing-compiler-changes/) to
+choose the smallest evidence at each step. When the invalid case is your best
+entry point, [follow the diagnostic](../diagnostics/) backward to its owner.
+
 ## Search without trusting a directory name
 
 Start with words visible at a boundary:

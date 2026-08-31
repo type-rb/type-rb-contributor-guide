@@ -39,13 +39,17 @@ jobs:
         run: |
           set -euo pipefail
           test -s dist/en/index.html
+          test -s dist/en/glossary/index.html
           test -s dist/en/foundations/how-a-compiler-works/index.html
           test -s dist/en/foundations/reading-a-changing-codebase/index.html
+          test -s dist/en/foundations/testing-compiler-changes/index.html
           test -s dist/en/reference-compiler/map/index.html
           test -s dist/en/reference-compiler/change-journey/index.html
+          test -s dist/en/reference-compiler/diagnostics/index.html
           test -s dist/en/reference-compiler/trace/index.html
           test -s dist/en/native-compiler/map/index.html
           test -s dist/en/native-compiler/change-journey/index.html
+          test -s dist/en/native-compiler/evidence/index.html
           test -s dist/en/native-compiler/trace/index.html
 
       - name: Configure GitHub Pages

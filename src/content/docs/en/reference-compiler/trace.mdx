@@ -79,6 +79,9 @@ Run the trace again. It should stop during checking, before Go generation. Read
 the diagnostic as a compact report of the checker's job: expected type, actual
 type, and source location.
 
+The [diagnostic guide](../diagnostics/) shows how to trace that failure backward
+from the visible result without depending on current checker helper names.
+
 <Aside type="tip" title="Restore the fixture after experimenting">
   Keep the checked-in trace small and deterministic. Add a second fixture when
   you want to teach a genuinely different path.

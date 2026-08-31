@@ -1,0 +1,169 @@
+---
+title: Reference compiler — follow a diagnostic
+description: Trace a compiler failure from visible output back to the responsibility that owns it.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+A diagnostic is one of the shortest routes into a compiler. It already tells
+you that a rule was checked, a source location survived, and a user-facing
+boundary received the result.
+
+Follow it backward from the visible failure. Do not start by reading the whole
+parser or checker.
+
+## A diagnostic has a lifecycle
+
+```text
+invalid source fact
+  -> owning compiler rule detects it
+  -> structured diagnostic records meaning and locations
+  -> compiler result carries it outward
+  -> CLI, editor, or machine-readable report renders it
+```
+
+The detector and the renderer answer different questions. The detector knows
+why the program is invalid. The renderer knows how this audience should see
+that fact.
+
+## First identify the owning phase
+
+| What became impossible? | Likely owner |
+| --- | --- |
+| Characters cannot form a valid token | Lexer |
+| Tokens cannot form a valid declaration or expression | Parser |
+| A name cannot be connected to a declaration | Resolver or project/declaration loading |
+| Types, arguments, returns, or control flow are inconsistent | Type checker |
+| Checked meaning cannot be represented in shared typed form | Lowering or an earlier missing semantic rule |
+| Only one generated target fails | That backend or its explicit target toolchain |
+| Source is correct but a style rule objects | Linter, not a correctness phase |
+
+Correctness diagnostics should be owned as early as the necessary semantic
+facts exist. A backend should not become a second checker for portable rules.
+
+## Walk through one type error
+
+Consider this intentionally invalid program:
+
+```text
+def answer(): Integer
+	return "forty-two"
+end
+```
+
+Do not begin with the current diagnostic sentence. Ask what the compiler must
+know:
+
+1. The parser must preserve a function, its return declaration, a return
+   statement, a string literal, and their locations.
+2. Resolution must connect the written `Integer` type and any names involved.
+3. The checker must compare the declared result type with the returned value's
+   type.
+4. A structured diagnostic must identify the mismatch and useful source span.
+5. Lowering and every backend must be skipped for this invalid program.
+
+Those responsibilities remain even if the internal node or helper names move.
+
+## Trace it backward
+
+<Steps>
+
+1. **Make the input minimal**
+
+   Remove unrelated declarations until one source fact produces one failure.
+   Keep enough context to preserve the real rule.
+
+2. **Record the stable visible identity**
+
+   Capture the diagnostic code or category when the public boundary provides
+   one, the primary location, process status, and the essential expected and
+   actual facts. Treat exact prose as a separate presentation concern.
+
+3. **Find the producer**
+
+   Search for the stable code, a distinctive message fragment, or the semantic
+   operation. The first formatting site may not be the rule owner; continue
+   until you find where the invalid relationship is decided.
+
+4. **Inspect the rule's inputs**
+
+   Ask which resolved identities, types, control-flow facts, or source spans
+   were available. If the necessary fact is missing, the bug may belong to an
+   earlier boundary.
+
+5. **Test the structured result**
+
+   Add the invalid case beside the nearest valid neighbor. Assert semantic facts
+   and locations before asserting one complete rendered sentence.
+
+6. **Check every changed presentation**
+
+   If the diagnostic crosses CLI, editor, JSON, or another protocol, test only
+   the surfaces whose contract changed. They should carry one compiler-owned
+   result, not rebuild the rule independently.
+
+</Steps>
+
+## Location is part of the explanation
+
+The most precise location is not always the smallest token. Choose the span
+that helps a reader act:
+
+- point to the expression whose value has the wrong type;
+- use a related location when the conflicting declaration is elsewhere;
+- keep the authored spelling available for a useful message; and
+- do not underline an entire file because one operand is wrong.
+
+A location test is valuable because source spans cross several phases. It can
+catch a bug even when the rule itself still rejects the program.
+
+## Suggestions are stronger contracts
+
+A suggestion claims that a replacement or action is relevant and safe enough
+to offer. Test more than its text:
+
+- the edited span is exact;
+- the replacement parses;
+- applying it removes the intended failure; and
+- it does not silently change unrelated source.
+
+When those facts are unavailable, a clear explanation without an automated
+replacement is better.
+
+## Correctness and lint are different
+
+The compiler owns facts required for a valid TypeRB program. Lint owns optional
+or configurable advice about maintainability and style.
+
+Do not move a correctness error into lint to make it suppressible. Do not turn
+a source-style preference into a compiler failure merely because the checker
+has convenient type information. A linter may consume compiler results without
+becoming their owner.
+
+## Common wrong turns
+
+- **Starting at the renderer:** changing prose may hide that the wrong rule or
+  location was produced.
+- **Testing only the invalid case:** an over-broad rule can reject correct
+  neighbors too.
+- **Fixing one backend:** portable invalidity must be settled before target
+  generation.
+- **Asserting one giant golden file:** a wording change then obscures semantic
+  and location regressions.
+- **Searching only by helper name:** stable codes, source facts, and semantic
+  terms survive refactors better.
+
+## Try the existing trace
+
+Run the [reference executable trace](../trace/), then make its suggested return
+type experiment. The command should stop during checking, before Go generation.
+
+Use the [change journey](../change-journey/) to place the failure and the
+[versioned map](../map/) only when you need the current source address of its
+owner.
+
+<Aside type="tip" title="A good diagnostic is a compact architecture test">
+  It connects source preservation, semantic ownership, structured compiler
+  output, and one or more user-facing transports. That makes it a useful place
+  to learn the system and a sensitive place to preserve boundaries.
+</Aside>

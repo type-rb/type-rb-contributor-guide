@@ -32,9 +32,10 @@ the matching big map. When code moves, first ask whether only an address moved
 or whether responsibility changed. Only the second case should require a
 conceptual rewrite.
 
-The site check rejects full Git revisions in foundations and change journeys.
-This is a narrow guardrail: canonical specifications and decision records may
-still be linked there, while version-specific source addresses belong in maps.
+The site check rejects full Git revisions outside versioned big maps. This is a
+narrow guardrail: canonical specifications and decision records may still be
+linked from durable guidance, while version-specific source addresses belong
+only in maps.
 
 ## Keep the two audiences separate
 

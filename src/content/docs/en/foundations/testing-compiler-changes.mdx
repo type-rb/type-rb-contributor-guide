@@ -1,0 +1,174 @@
+---
+title: Test a compiler change
+description: Choose evidence that proves the changed responsibility without coupling tests to private helpers.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+A compiler test should answer a claim. “This helper returned this struct” is
+sometimes useful, but it rarely explains why a contributor should trust the
+language or tool after a change.
+
+Begin with the contract that changed, then choose the smallest observable
+evidence that can prove it.
+
+## Start with one sentence
+
+Write the claim before the test:
+
+> Given **this input and context**, the owning boundary must produce **this
+> result or diagnostic**, and every named consumer must preserve **this visible
+> behavior**.
+
+If the sentence needs several unrelated “and” clauses, the change may contain
+more than one responsibility.
+
+## Build a valid–invalid pair
+
+Most compiler rules have two useful edges:
+
+- the smallest valid program that must pass; and
+- the nearest invalid program that must fail for one clear reason.
+
+The valid case prevents a checker from becoming too strict. The invalid case
+proves that the intended owner rejects the program before a later stage fails
+accidentally.
+
+<Aside type="tip" title="Change one fact">
+  Keep the pair almost identical. Change one type, name, argument, operator, or
+  control-flow fact. If ten facts change, a passing test does not reveal which
+  one mattered.
+</Aside>
+
+## Match evidence to responsibility
+
+| Changed contract | First focused evidence | Downstream evidence when meaning changed |
+| --- | --- | --- |
+| Source recognition | token or parsed-shape result with source locations | formatter round trip and semantic analysis |
+| Name resolution | resolved declaration identity or unknown-name diagnostic | checked use sites and editor answers |
+| Type rule | valid inference plus a focused invalid diagnostic | typed IR and every affected backend |
+| Portable operation | checked operation and typed IR | generated source and runtime behavior across targets |
+| One target representation | generated artifact for that target | target toolchain and runtime result |
+| Diagnostic presentation | structured diagnostic payload | CLI, editor, or JSON rendering that changed |
+| Native runtime or ABI | boundary values, failures, and representative execution | target inspection and retained regression corpus |
+| Bootstrap | adjacent generations using the real candidate compiler | exact fixed point, conformance, provenance, and cleanup |
+| Performance | registered workload and comparable environment | correctness, determinism, variance, and resource measurements |
+
+Test the earliest boundary that can be wrong. Add later evidence only for
+consumers affected by the changed meaning.
+
+## Prefer public phase boundaries
+
+Private helper tests make refactoring expensive when they duplicate the same
+assertion at every level. A phase-boundary test survives more internal change:
+
+```text
+source input
+  -> public compiler boundary
+  -> parsed shape, diagnostic, typed operation, generated artifact, or output
+```
+
+This does not forbid small unit tests. Use them for algorithms with their own
+contract: escaping, graph traversal, layout arithmetic, deterministic ordering,
+or a decoder. Do not make them the only proof of a language behavior.
+
+## Use an evidence ladder
+
+<Steps>
+
+1. **State the source-level claim**
+
+   Keep the example small enough to read without opening its test harness.
+
+2. **Prove rejection as well as acceptance**
+
+   Check the owning diagnostic, source location, and important semantic facts.
+
+3. **Inspect the shared handoff**
+
+   When execution meaning changes, prove the checked or intermediate
+   representation before debugging targets.
+
+4. **Exercise affected consumers**
+
+   Test every reference backend affected by portable meaning. For Native, add
+   the relevant QBE, runtime, ABI, target, or bootstrap evidence.
+
+5. **Run representative behavior**
+
+   Observe output, failure mode, exit status, artifact, or protocol response.
+
+6. **Run the broad regression suite last**
+
+   The full suite detects unexpected coupling. Focused evidence should already
+   explain the intended change when a broad regression fails.
+
+</Steps>
+
+## Test diagnostics as data
+
+Avoid asserting only a complete rendered sentence when the real contract is
+structured.
+
+Depending on the public boundary, useful facts include:
+
+- stable diagnostic identity or category;
+- severity;
+- primary and related source locations;
+- expected and actual semantic facts;
+- replacement or suggestion data; and
+- error count and process status.
+
+Rendered wording can still deserve a golden test when it is user-facing. Keep
+the structured assertion beside it so a wording improvement does not hide a
+semantic regression.
+
+## Test deterministic artifacts deliberately
+
+Exact text or byte equality is strong evidence only when exact identity is part
+of the contract.
+
+Use exact equality for declared deterministic outputs, fixed-point artifacts,
+schemas, and canonical formatting. Otherwise compare the semantic property
+that matters. An overly broad golden file can turn harmless ordering or spacing
+changes into noise.
+
+## Treat external tools as boundaries
+
+A compiler test should make tool ownership visible:
+
+- Did TypeRB produce invalid target source?
+- Did the selected target tool reject valid source?
+- Did linking use the wrong ABI or library boundary?
+- Did the program run and then fail in runtime support?
+
+Capture enough command, target, and status information to answer the question
+without attributing every failure to “the compiler.”
+
+## Performance comes after correctness
+
+Do not promote one fast run into evidence. A useful performance comparison
+fixes the workload, inputs, compiler identity, target, toolchain, environment,
+warmup, repetitions, statistic, and regression threshold.
+
+For Native, preserve conformance, deterministic output, fixed points, runtime
+behavior, and artifact limits while measuring. An improvement that changes the
+program or compiler being measured is not comparable.
+
+## Review checklist
+
+Before calling the evidence complete, ask:
+
+- Can a reader understand the fixture without reading the harness?
+- Is there a nearby invalid or valid neighbor?
+- Does the first assertion belong to the stage that owns the rule?
+- Did portable meaning reach every affected reference backend?
+- Did a Native change include its required compatibility, runtime, target, or
+  bootstrap evidence?
+- Are exact comparisons limited to contracts that require exact identity?
+- Will private helper renames leave the important test intact?
+- Does a broad regression failure have enough focused evidence to localize it?
+
+Continue with the [reference change journey](../../reference-compiler/change-journey/)
+or [Native change journey](../../native-compiler/change-journey/) to place the
+test along one compiler path.

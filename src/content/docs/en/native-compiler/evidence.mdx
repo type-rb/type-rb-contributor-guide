@@ -1,0 +1,178 @@
+---
+title: Native compiler — read the evidence
+description: Understand what conformance, determinism, bootstrap, target, and performance evidence can prove.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+
+TypeRB Native is an experiment, so evidence is part of the architecture. A
+successful command is not enough by itself. Each result should answer one
+declared claim and keep neighboring claims separate.
+
+## Begin with the claim
+
+| Claim | Evidence that can support it | Evidence that is not enough alone |
+| --- | --- | --- |
+| Native preserves a TypeRB behavior | Valid and invalid conformance cases, often compared with the exact reference identity | One generated application that happens to run |
+| The frontend is deterministic | Repeated diagnostics and QBE IL under fixed inputs | Similar-looking output inspected by hand |
+| A runtime or ABI boundary works | Boundary values, failure behavior, representative programs, target inspection | Compiler self-build success |
+| The compiler is self-hosting | Each generated compiler actually builds the next generation | A compiler that only emits its own source or a precomputed artifact |
+| Bootstrap converges | Exact adjacent-generation artifacts under a declared fixed-point policy | Source equivalence or normalized files when exact identity was required |
+| A target is verified | Exact target profile, tool identities, executable inspection, behavior, and failure evidence | Success on a different architecture or toolchain |
+| A change improves performance | Registered workload, comparable environment, repeated measurements, thresholds, and preserved correctness | One fastest run or a smaller but behaviorally different artifact |
+
+An evidence bundle may support several claims, but do not infer an unstated
+claim merely because the bundle is large.
+
+## Read evidence in dependency order
+
+<Steps>
+
+1. **Language behavior**
+
+   Confirm the exact TypeRB compatibility declaration and the valid and invalid
+   cases inside it. Native must not fill an unsupported gap with new semantics.
+
+2. **Deterministic compiler products**
+
+   Compare diagnostics, checked products, QBE IL, and other declared artifacts
+   under fixed inputs. This makes later generation comparisons meaningful.
+
+3. **Application behavior and runtime boundaries**
+
+   Run representative programs, edge values, and failure cases. Inspect the
+   target boundary when layout, ABI, symbols, or dependencies matter.
+
+4. **Adjacent compiler generations**
+
+   Verify that each candidate compiler is the executable used to build the next
+   candidate from the same declared source and external tools.
+
+5. **Fixed point and provenance**
+
+   Apply the exact equality policy and record where the starting seed, source,
+   toolchain, and produced artifacts came from.
+
+6. **Performance and size**
+
+   Measure only after every retained correctness and reproducibility condition
+   passes.
+
+</Steps>
+
+Later evidence depends on earlier evidence. A benchmark cannot repair a failed
+conformance case, and a fixed point cannot prove the portable meaning of a
+program.
+
+## Understand a bootstrap chain
+
+Use roles rather than assuming that generation labels have universal meaning:
+
+```text
+recovery or published previous seed
+  -> first compiler in the ordinary chain
+  -> candidate built by that compiler
+  -> next candidate built by the previous candidate
+  -> fixed-point comparison under one declared policy
+```
+
+For every arrow, ask:
+
+- Which executable performed the build?
+- Which compiler source did it read?
+- Which QBE and platform tool boundaries were explicit?
+- What artifact became the next executable?
+- What output, failure, cleanup, and identity checks ran?
+
+If recovery tooling appears inside an arrow claimed to be Native-to-Native,
+the ownership claim is not established.
+
+## Fixed point: what it proves
+
+A fixed point proves that repeated generation has stopped changing according
+to an exact comparison policy. That is strong reproducibility evidence.
+
+It does not prove by itself that:
+
+- accepted TypeRB behavior is correct;
+- invalid programs are rejected correctly;
+- the compiler source was genuinely exercised;
+- runtime memory and ABI boundaries are safe;
+- a seed has trustworthy provenance; or
+- another target produces an equivalent compiler.
+
+Keep mutation, conformance, application, runtime, target, and provenance checks
+beside the fixed point.
+
+## Seed identity and provenance
+
+A seed is a handoff of trust. Useful seed evidence names:
+
+- release or recovery role;
+- exact source and compiler identity;
+- target profile;
+- artifact name, size, and digest;
+- manifest and schema identity;
+- QBE and platform tool identities;
+- creation and independent verification workflows; and
+- whether the asset is immutable or replaceable.
+
+The current
+[compatibility declaration](https://github.com/type-rb/type-rb-native/blob/main/compatibility/current.json)
+keeps implementation version, exact TypeRB identity, protocols, runtime and
+MIR stability, backend, profiles, and evidence as separate fields. The
+[versioning guide](https://github.com/type-rb/type-rb-native/blob/main/docs/versioning.md)
+explains why those axes must not be collapsed into one version number.
+
+## How to read a gate record
+
+A gate is easier to understand in this order:
+
+1. **Question:** What uncertainty was the experiment meant to reduce?
+2. **Boundary:** Which behavior, tool, target, and ownership claims were in
+   scope?
+3. **Acceptance:** What had to be true before implementation results were
+   known?
+4. **Result:** Which exact run and artifacts satisfied or failed those checks?
+5. **Non-goals:** Which tempting broader claims remain unsupported?
+6. **Successor:** Which new question became reasonable only after this one?
+
+Do not read gate numbers as a recommended code-reading order. Start with the
+ordinary application path, then open a gate to learn the rationale and evidence
+behind one boundary.
+
+## Investigate a failed evidence bundle
+
+| Failure | First useful question |
+| --- | --- |
+| Conformance mismatch | Is the portable rule settled, and which implementation first differs? |
+| Nondeterministic QBE | Which declared input or ordering is uncontrolled? |
+| Application mismatch | Did checked meaning, QBE, runtime, ABI, or the external tool boundary first diverge? |
+| Generation cannot build the next | Is the produced artifact a complete compiler, and was it actually used? |
+| Fixed point drifts | Are source, basename, target, tools, metadata, and environment fixed as required? |
+| One target fails | Which target profile or platform ABI assumption differs? |
+| Performance regresses | Did correctness and workload identity stay fixed before comparing measurements? |
+
+Localize the first broken dependency. Re-running a later aggregate check rarely
+explains an earlier failure.
+
+## Common wrong inferences
+
+- “It bootstraps, therefore it supports TypeRB.”
+- “Two compilers are identical, therefore they are correct.”
+- “Darwin passed, therefore the Linux profile is verified.”
+- “The seed is published, therefore its provenance is complete.”
+- “The median improved, therefore the candidate is better.”
+- “A gate passed, therefore Native is a supported release target.”
+
+Each statement skips an independent claim.
+
+<Aside type="caution" title="Experimental evidence is scoped evidence">
+  A strong result can close one question without turning the entire Native
+  compiler into a supported product. Preserve the exact boundary and non-goals
+  when summarizing it.
+</Aside>
+
+Continue with the [Native change journey](../change-journey/) to place the
+evidence along the compiler path, or run the [executable trace](../trace/) to
+observe the frontend and QBE handoff directly.

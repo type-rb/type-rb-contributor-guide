@@ -51,6 +51,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Welcome', link: '/' },
 						{ label: 'Choose a path', link: '/paths/' },
+						{ label: 'Contributor glossary', link: '/glossary/' },
 					],
 				},
 				{
@@ -58,6 +59,7 @@ export default defineConfig({
 					items: [
 						{ label: 'How a compiler works', link: '/foundations/how-a-compiler-works/' },
 						{ label: 'Read changing code', link: '/foundations/reading-a-changing-codebase/' },
+						{ label: 'Test a compiler change', link: '/foundations/testing-compiler-changes/' },
 					],
 				},
 				{
@@ -65,6 +67,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Big map', link: '/reference-compiler/map/' },
 						{ label: 'Change journey', link: '/reference-compiler/change-journey/' },
+						{ label: 'Follow a diagnostic', link: '/reference-compiler/diagnostics/' },
 						{ label: 'Executable trace', link: '/reference-compiler/trace/' },
 					],
 				},
@@ -73,6 +76,7 @@ export default defineConfig({
 					items: [
 						{ label: 'Big map', link: '/native-compiler/map/' },
 						{ label: 'Change journey', link: '/native-compiler/change-journey/' },
+						{ label: 'Read the evidence', link: '/native-compiler/evidence/' },
 						{ label: 'Executable trace', link: '/native-compiler/trace/' },
 					],
 				},

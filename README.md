@@ -10,7 +10,9 @@ people who want to learn and use the language.
 The guide separates material by how quickly it changes:
 
 - shared foundations explain durable compiler concepts;
+- a contributor glossary keeps compiler and evidence terms distinct;
 - change journeys follow responsibilities and evidence;
+- focused guides explain test selection, diagnostics, and Native evidence;
 - versioned big maps point to exact `type-rb` and `type-rb-native` source; and
 - executable traces keep one visible path through each compiler checked in CI.
 
